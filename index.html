@@ -252,6 +252,19 @@
             background: #e9ecef;
         }
         
+        /* 节假日样式 */
+        .day.holiday {
+            background: #ffebee; /* 法定节假日 - 深红色背景 */
+        }
+        
+        .day.weekend {
+            background: #e3f2fd; /* 普通休息日 - 浅蓝色背景 */
+        }
+        
+        .day.workday {
+            background: #fffde7; /* 工作日 - 淡黄色背景 */
+        }
+        
         .day-number {
             font-weight: bold;
             margin-bottom: 5px;
@@ -403,6 +416,42 @@
             vertical-align: middle;
         }
         
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+        
+        .legend-holiday {
+            background: #ffebee;
+            border: 1px solid #e57373;
+        }
+        
+        .legend-weekend {
+            background: #e3f2fd;
+            border: 1px solid #64b5f6;
+        }
+        
+        .legend-workday {
+            background: #fffde7;
+            border: 1px solid #fdd835;
+        }
+        
         .debug-info {
             background: #f8f9fa;
             padding: 15px;
@@ -446,6 +495,11 @@
                 width: 95%;
                 padding: 20px;
             }
+            
+            .legend {
+                flex-direction: column;
+                align-items: center;
+            }
         }
     </style>
 </head>
@@ -467,6 +521,20 @@
                 </div>
                 <button onclick="confirmUserSelection()">确认身份</button>
                 <button class="secondary" onclick="clearUserSelection()">取消</button>
+            </div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color legend-holiday"></div>
+                    <span>法定节假日</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-weekend"></div>
+                    <span>周末/调休</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-workday"></div>
+                    <span>工作日</span>
+                </div>
             </div>
         </div>
         
@@ -528,7 +596,49 @@
         // 配置信息
         const CONFIG = {
             DATA_URL: 'schedule.csv',
-            EXCLUDED_SHIFTS: ['休', '离职'] // 需要排除的班次代码
+            EXCLUDED_SHIFTS: ['休', '离职'],
+            CACHE_DURATION: 15 * 60 * 1000 // 15分钟缓存
+        };
+
+        // 节假日数据 - 2025年示例
+        const HOLIDAY_DATA = {
+            // 2025年法定节假日
+            "2025-01-01": { type: "holiday", name: "元旦" },
+            "2025-01-02": { type: "holiday", name: "元旦" },
+            "2025-01-03": { type: "holiday", name: "元旦" },
+            "2025-01-28": { type: "holiday", name: "春节" },
+            "2025-01-29": { type: "holiday", name: "春节" },
+            "2025-01-30": { type: "holiday", name: "春节" },
+            "2025-01-31": { type: "holiday", name: "春节" },
+            "2025-02-01": { type: "holiday", name: "春节" },
+            "2025-02-02": { type: "holiday", name: "春节" },
+            "2025-02-03": { type: "holiday", name: "春节" },
+            "2025-04-04": { type: "holiday", name: "清明节" },
+            "2025-04-05": { type: "holiday", name: "清明节" },
+            "2025-04-06": { type: "holiday", name: "清明节" },
+            "2025-05-01": { type: "holiday", name: "劳动节" },
+            "2025-05-02": { type: "holiday", name: "劳动节" },
+            "2025-05-03": { type: "holiday", name: "劳动节" },
+            "2025-06-08": { type: "holiday", name: "端午节" },
+            "2025-06-09": { type: "holiday", name: "端午节" },
+            "2025-06-10": { type: "holiday", name: "端午节" },
+            "2025-09-29": { type: "holiday", name: "中秋节" },
+            "2025-09-30": { type: "holiday", name: "中秋节" },
+            "2025-10-01": { type: "holiday", name: "国庆节" },
+            "2025-10-02": { type: "holiday", name: "国庆节" },
+            "2025-10-03": { type: "holiday", name: "国庆节" },
+            "2025-10-04": { type: "holiday", name: "国庆节" },
+            "2025-10-05": { type: "holiday", name: "国庆节" },
+            "2025-10-06": { type: "holiday", name: "国庆节" },
+            "2025-10-07": { type: "holiday", name: "国庆节" },
+            
+            // 2025年调休工作日
+            "2025-01-26": { type: "workday", name: "调休上班" },
+            "2025-02-08": { type: "workday", name: "调休上班" },
+            "2025-04-27": { type: "workday", name: "调休上班" },
+            "2025-05-04": { type: "workday", name: "调休上班" },
+            "2025-09-28": { type: "workday", name: "调休上班" },
+            "2025-10-11": { type: "workday", name: "调休上班" }
         };
 
         let allScheduleData = [];
@@ -536,6 +646,37 @@
         let currentUserShifts = [];
         let availableUsers = [];
         let filteredUsers = [];
+
+        // 缓存功能
+        function getCachedData() {
+            try {
+                const cached = localStorage.getItem('schedule_cache');
+                const lastUpdate = localStorage.getItem('schedule_last_update');
+                
+                if (cached && lastUpdate) {
+                    const age = Date.now() - parseInt(lastUpdate);
+                    if (age < CONFIG.CACHE_DURATION) {
+                        logDebug('使用缓存数据，缓存年龄: ' + Math.round(age/1000) + '秒');
+                        return JSON.parse(cached);
+                    } else {
+                        logDebug('缓存已过期，年龄: ' + Math.round(age/1000) + '秒');
+                    }
+                }
+            } catch (e) {
+                console.warn('缓存读取失败:', e);
+            }
+            return null;
+        }
+
+        function cacheData(data) {
+            try {
+                localStorage.setItem('schedule_cache', JSON.stringify(data));
+                localStorage.setItem('schedule_last_update', Date.now().toString());
+                logDebug('数据已缓存');
+            } catch (e) {
+                console.warn('缓存存储失败:', e);
+            }
+        }
 
         // 调试功能 - 仅Sugar用户可见
         function logDebug(message) {
@@ -560,10 +701,19 @@
         // 加载数据
         async function loadScheduleData() {
             try {
+                // 先尝试从缓存加载
+                const cachedData = getCachedData();
+                if (cachedData) {
+                    allScheduleData = cachedData;
+                    logDebug('从缓存加载数据: ' + allScheduleData.length + ' 条记录');
+                    initializeAfterDataLoad();
+                    return;
+                }
+                
                 showLoading('正在加载班表数据...');
                 
                 // 加载CSV数据
-                const response = await fetch(CONFIG.DATA_URL);
+                const response = await fetch(CONFIG.DATA_URL + '?t=' + Date.now()); // 添加时间戳防止缓存
                 const csvText = await response.text();
                 
                 // 解析CSV数据
@@ -574,25 +724,40 @@
                     throw new Error('CSV文件中没有有效数据');
                 }
                 
-                // 获取所有可用的用户
-                availableUsers = getAllUsers();
-                filteredUsers = [...availableUsers];
-                logDebug('可用用户: ' + availableUsers.join(', '));
+                // 缓存数据
+                cacheData(allScheduleData);
                 
-                // 初始化年份和月份筛选器
-                populateYearMonthFilter();
-                
-                // 渲染日历
-                renderCalendar();
-                
-                // 如果是Sugar用户，显示调试按钮
-                if (availableUsers.includes('Sugar')) {
-                    document.getElementById('debugButton').style.display = 'inline-block';
-                }
+                initializeAfterDataLoad();
                 
             } catch (error) {
                 console.error('加载失败:', error);
-                showError('数据加载失败: ' + error.message);
+                // 尝试使用缓存数据
+                const cachedData = getCachedData();
+                if (cachedData) {
+                    allScheduleData = cachedData;
+                    logDebug('网络失败，使用缓存数据');
+                    initializeAfterDataLoad();
+                } else {
+                    showError('数据加载失败: ' + error.message);
+                }
+            }
+        }
+
+        function initializeAfterDataLoad() {
+            // 获取所有可用的用户
+            availableUsers = getAllUsers();
+            filteredUsers = [...availableUsers];
+            logDebug('可用用户: ' + availableUsers.join(', '));
+            
+            // 初始化年份和月份筛选器
+            populateYearMonthFilter();
+            
+            // 渲染日历
+            renderCalendar();
+            
+            // 如果是Sugar用户，显示调试按钮
+            if (availableUsers.includes('Sugar')) {
+                document.getElementById('debugButton').style.display = 'inline-block';
             }
         }
 
@@ -631,20 +796,24 @@
             searchResults.innerHTML = '';
             
             if (filteredUsers.length === 0) {
-                searchResults.style.display = 'none';
-                return;
+                const noResult = document.createElement('div');
+                noResult.className = 'search-result';
+                noResult.textContent = '无匹配结果';
+                noResult.style.color = '#999';
+                noResult.style.cursor = 'default';
+                searchResults.appendChild(noResult);
+            } else {
+                filteredUsers.forEach(user => {
+                    const result = document.createElement('div');
+                    result.className = 'search-result';
+                    result.textContent = user;
+                    result.onclick = () => {
+                        document.getElementById('userSearch').value = user;
+                        searchResults.style.display = 'none';
+                    };
+                    searchResults.appendChild(result);
+                });
             }
-            
-            filteredUsers.forEach(user => {
-                const result = document.createElement('div');
-                result.className = 'search-result';
-                result.textContent = user;
-                result.onclick = () => {
-                    document.getElementById('userSearch').value = user;
-                    searchResults.style.display = 'none';
-                };
-                searchResults.appendChild(result);
-            });
             
             searchResults.style.display = 'block';
         }
@@ -653,8 +822,14 @@
         function confirmUserSelection() {
             const selectedUserName = document.getElementById('userSearch').value.trim();
             
-            if (!selectedUserName || !availableUsers.includes(selectedUserName)) {
+            if (!selectedUserName) {
                 alert('请选择有效的员工姓名');
+                return;
+            }
+            
+            // 检查用户是否存在
+            if (!availableUsers.includes(selectedUserName)) {
+                alert('未找到该员工，请检查姓名是否正确');
                 return;
             }
             
@@ -672,8 +847,11 @@
 
         // 清除用户选择
         function clearUserSelection() {
+            currentUserName = '';
+            updateUserInfo();
             document.getElementById('userSelector').style.display = 'none';
             document.getElementById('userInfo').style.display = 'inline-block';
+            renderCalendar();
         }
 
         // 更新用户信息显示
@@ -775,6 +953,29 @@
             logDebug(`用户 ${currentUserName} 的班表数量: ${currentUserShifts.length}`);
         }
 
+        // 获取日期类型（节假日、周末、工作日）
+        function getDateType(dateStr) {
+            // 检查是否是法定节假日
+            if (HOLIDAY_DATA[dateStr] && HOLIDAY_DATA[dateStr].type === 'holiday') {
+                return 'holiday';
+            }
+            
+            // 检查是否是调休工作日
+            if (HOLIDAY_DATA[dateStr] && HOLIDAY_DATA[dateStr].type === 'workday') {
+                return 'workday';
+            }
+            
+            // 检查是否是周末
+            const date = new Date(dateStr);
+            const dayOfWeek = date.getDay();
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                return 'weekend';
+            }
+            
+            // 默认是工作日
+            return 'workday';
+        }
+
         // 填充年份和月份筛选器
         function populateYearMonthFilter() {
             const yearSelect = document.getElementById('yearSelect');
@@ -828,6 +1029,9 @@
 
         // 刷新数据
         function refreshData() {
+            // 清除缓存
+            localStorage.removeItem('schedule_cache');
+            localStorage.removeItem('schedule_last_update');
             loadScheduleData();
         }
 
@@ -897,8 +1101,9 @@
             // 填充当月日期
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                const dateType = getDateType(dateStr);
                 
-                calendarHTML += `<div class="day" onclick="handleDayClick('${dateStr}')">`;
+                calendarHTML += `<div class="day ${dateType}" onclick="handleDayClick('${dateStr}')">`;
                 calendarHTML += `<div class="day-number">${day}</div>`;
                 
                 // 如果是个人模式，显示该用户的班次
