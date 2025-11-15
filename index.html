@@ -70,6 +70,21 @@
             border-radius: 20px;
             display: inline-block;
             margin-top: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .user-info:hover {
+            background: #27ae60;
+            transform: scale(1.05);
+        }
+        
+        .user-info.global-mode {
+            background: #3498db;
+        }
+        
+        .user-info.global-mode:hover {
+            background: #2980b9;
         }
         
         .controls {
@@ -86,7 +101,7 @@
             justify-content: center;
         }
         
-        select, button {
+        select, button, input {
             padding: 12px 20px;
             border: 2px solid #e9ecef;
             border-radius: 8px;
@@ -96,7 +111,7 @@
             transition: all 0.3s ease;
         }
         
-        select:focus, button:hover {
+        select:focus, button:hover, input:focus {
             border-color: #3498db;
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
@@ -112,15 +127,58 @@
             transform: translateY(-2px);
         }
         
+        button.secondary {
+            background: #95a5a6;
+            border-color: #95a5a6;
+        }
+        
+        button.secondary:hover {
+            background: #7f8c8d;
+        }
+        
         .user-selector {
             margin-top: 15px;
             text-align: center;
         }
         
-        .user-selector select {
-            padding: 8px 15px;
-            font-size: 14px;
+        .user-search-container {
+            position: relative;
+            display: inline-block;
             margin-right: 10px;
+        }
+        
+        .user-search {
+            padding: 10px 15px;
+            width: 300px;
+            font-size: 14px;
+        }
+        
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .search-result {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .search-result:hover {
+            background: #f8f9fa;
+        }
+        
+        .search-result:last-child {
+            border-bottom: none;
         }
         
         .calendar-container {
@@ -176,11 +234,22 @@
             padding: 10px;
             border: 1px solid #e9ecef;
             position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .day:hover {
+            background: #f8f9fa;
+            transform: scale(1.02);
         }
         
         .day.other-month {
             background: #f8f9fa;
             color: #adb5bd;
+        }
+        
+        .day.other-month:hover {
+            background: #e9ecef;
         }
         
         .day-number {
@@ -242,6 +311,98 @@
             color: #2c3e50;
         }
         
+        .day-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .modal-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .close-modal {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .close-modal:hover {
+            background: #c0392b;
+        }
+        
+        .day-shifts {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .day-shift-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .day-shift-item.excluded {
+            opacity: 0.6;
+            border-left-color: #95a5a6;
+        }
+        
+        .shift-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .shift-time {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .mode-indicator {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 2px 8px;
+            background: #f39c12;
+            color: white;
+            border-radius: 10px;
+            font-size: 12px;
+            vertical-align: middle;
+        }
+        
         .debug-info {
             background: #f8f9fa;
             padding: 15px;
@@ -268,13 +429,22 @@
                 flex-direction: column;
             }
             
-            select, button {
+            select, button, input {
                 width: 100%;
             }
             
             .logo-title {
                 flex-direction: column;
                 gap: 10px;
+            }
+            
+            .user-search {
+                width: 100%;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 20px;
             }
         }
     </style>
@@ -286,15 +456,17 @@
                 <img src="LOGO.png" alt="VXI-Mammotion Logo" class="logo" onerror="this.style.display='none'">
                 <h1>VXI-Mammotion班表</h1>
             </div>
-            <div class="tips">tips:第一次选择身份之后会记住选择</div>
-            <div class="user-info" id="userInfo">
-                请选择您的身份
+            <div class="tips">点击用户身份可重新选择 | 未选择身份时可点击日期查看当天所有班次</div>
+            <div class="user-info" id="userInfo" onclick="showUserSelector()">
+                点击选择身份
             </div>
-            <div class="user-selector" id="userSelector">
-                <select id="employeeSelect">
-                    <option value="">请选择身份...</option>
-                </select>
+            <div class="user-selector" id="userSelector" style="display: none;">
+                <div class="user-search-container">
+                    <input type="text" id="userSearch" class="user-search" placeholder="搜索员工姓名..." oninput="filterUsers()">
+                    <div class="search-results" id="searchResults"></div>
+                </div>
                 <button onclick="confirmUserSelection()">确认身份</button>
+                <button class="secondary" onclick="clearUserSelection()">取消</button>
             </div>
         </div>
         
@@ -321,12 +493,28 @@
                 </select>
                 
                 <button onclick="refreshData()">刷新数据</button>
+                
+                <!-- 调试按钮（仅Sugar用户可见） -->
+                <button id="debugButton" style="display: none;" onclick="toggleDebug()">调试信息</button>
             </div>
         </div>
         
         <div class="calendar-container" id="calendarContainer">
             <div class="loading">
                 ⏳ 正在加载班表数据...
+            </div>
+        </div>
+        
+        <!-- 日期详情模态框 -->
+        <div class="day-modal" id="dayModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="modalTitle">日期详情</h2>
+                    <button class="close-modal" onclick="closeDayModal()">关闭</button>
+                </div>
+                <div class="day-shifts" id="dayShifts">
+                    <!-- 班次列表将在这里动态生成 -->
+                </div>
             </div>
         </div>
         
@@ -339,13 +527,15 @@
     <script>
         // 配置信息
         const CONFIG = {
-            DATA_URL: 'schedule.csv'
+            DATA_URL: 'schedule.csv',
+            EXCLUDED_SHIFTS: ['休', '离职'] // 需要排除的班次代码
         };
 
         let allScheduleData = [];
         let currentUserName = '';
         let currentUserShifts = [];
         let availableUsers = [];
+        let filteredUsers = [];
 
         // 调试功能 - 仅Sugar用户可见
         function logDebug(message) {
@@ -386,24 +576,8 @@
                 
                 // 获取所有可用的用户
                 availableUsers = getAllUsers();
+                filteredUsers = [...availableUsers];
                 logDebug('可用用户: ' + availableUsers.join(', '));
-                
-                // 检查是否有保存的用户选择
-                const savedUserName = localStorage.getItem('selected_user_name');
-                if (savedUserName && availableUsers.includes(savedUserName)) {
-                    // 有保存的用户，自动选择
-                    currentUserName = savedUserName;
-                    document.getElementById('userInfo').textContent = `当前用户: ${currentUserName}`;
-                    document.getElementById('userSelector').style.display = 'none';
-                    
-                    // 如果是Sugar用户，显示调试按钮
-                    if (currentUserName === 'Sugar') {
-                        addDebugButton();
-                    }
-                } else {
-                    // 没有保存的用户，显示选择器
-                    showUserSelector();
-                }
                 
                 // 初始化年份和月份筛选器
                 populateYearMonthFilter();
@@ -411,70 +585,108 @@
                 // 渲染日历
                 renderCalendar();
                 
+                // 如果是Sugar用户，显示调试按钮
+                if (availableUsers.includes('Sugar')) {
+                    document.getElementById('debugButton').style.display = 'inline-block';
+                }
+                
             } catch (error) {
                 console.error('加载失败:', error);
                 showError('数据加载失败: ' + error.message);
             }
         }
 
-        // 为Sugar用户添加调试按钮
-        function addDebugButton() {
-            const filterGroup = document.querySelector('.filter-group');
-            const debugButton = document.createElement('button');
-            debugButton.textContent = '调试信息';
-            debugButton.onclick = toggleDebug;
-            debugButton.style.background = '#e67e22';
-            filterGroup.appendChild(debugButton);
-        }
-
         // 显示用户选择器
         function showUserSelector() {
             const userSelector = document.getElementById('userSelector');
-            const employeeSelect = document.getElementById('employeeSelect');
+            const userInfo = document.getElementById('userInfo');
             
-            // 清空现有选项
-            employeeSelect.innerHTML = '<option value="">请选择身份...</option>';
+            userSelector.style.display = 'block';
+            userInfo.style.display = 'none';
             
-            // 添加用户选项
-            availableUsers.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user;
-                option.textContent = user;
-                employeeSelect.appendChild(option);
+            // 重置搜索
+            document.getElementById('userSearch').value = '';
+            filteredUsers = [...availableUsers];
+            updateSearchResults();
+        }
+
+        // 过滤用户
+        function filterUsers() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            
+            if (searchTerm === '') {
+                filteredUsers = [...availableUsers];
+            } else {
+                filteredUsers = availableUsers.filter(user => 
+                    user.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            updateSearchResults();
+        }
+
+        // 更新搜索结果
+        function updateSearchResults() {
+            const searchResults = document.getElementById('searchResults');
+            searchResults.innerHTML = '';
+            
+            if (filteredUsers.length === 0) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            filteredUsers.forEach(user => {
+                const result = document.createElement('div');
+                result.className = 'search-result';
+                result.textContent = user;
+                result.onclick = () => {
+                    document.getElementById('userSearch').value = user;
+                    searchResults.style.display = 'none';
+                };
+                searchResults.appendChild(result);
             });
             
-            // 显示选择器
-            userSelector.style.display = 'block';
-            document.getElementById('userInfo').textContent = '请选择您的身份';
-            
-            showLoading('请选择您的身份以查看班表');
+            searchResults.style.display = 'block';
         }
 
         // 确认用户选择
         function confirmUserSelection() {
-            const employeeSelect = document.getElementById('employeeSelect');
-            const selectedUserName = employeeSelect.value;
+            const selectedUserName = document.getElementById('userSearch').value.trim();
             
-            if (!selectedUserName) {
-                alert('请选择您的身份');
+            if (!selectedUserName || !availableUsers.includes(selectedUserName)) {
+                alert('请选择有效的员工姓名');
                 return;
             }
             
             currentUserName = selectedUserName;
-            document.getElementById('userInfo').textContent = `当前用户: ${currentUserName}`;
+            updateUserInfo();
+            
+            // 隐藏选择器
             document.getElementById('userSelector').style.display = 'none';
-            
-            // 保存选择
-            localStorage.setItem('selected_user_name', currentUserName);
-            
-            // 如果是Sugar用户，显示调试按钮
-            if (currentUserName === 'Sugar') {
-                addDebugButton();
-            }
+            document.getElementById('userInfo').style.display = 'inline-block';
             
             // 筛选并显示班表
             filterUserShifts();
             renderCalendar();
+        }
+
+        // 清除用户选择
+        function clearUserSelection() {
+            document.getElementById('userSelector').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'inline-block';
+        }
+
+        // 更新用户信息显示
+        function updateUserInfo() {
+            const userInfo = document.getElementById('userInfo');
+            
+            if (currentUserName) {
+                userInfo.textContent = `当前身份: ${currentUserName}`;
+                userInfo.className = 'user-info';
+            } else {
+                userInfo.textContent = '点击选择身份 (全局模式)';
+                userInfo.className = 'user-info global-mode';
+            }
         }
 
         // 获取所有用户
@@ -622,18 +834,6 @@
         // 渲染日历
         function renderCalendar() {
             const calendarContainer = document.getElementById('calendarContainer');
-            
-            // 检查是否已选择用户
-            if (!currentUserName) {
-                calendarContainer.innerHTML = `
-                    <div class="empty-state">
-                        <h3>请先选择您的身份</h3>
-                        <p>在上方选择您的姓名以查看个人班表</p>
-                    </div>
-                `;
-                return;
-            }
-            
             const selectedYear = document.getElementById('yearSelect').value;
             const selectedMonth = document.getElementById('monthSelect').value;
             
@@ -648,37 +848,15 @@
                 return;
             }
             
-            logDebug(`筛选条件 - 年份: ${selectedYear}, 月份: ${selectedMonth}, 用户: ${currentUserName}`);
-            
-            // 筛选当前用户的班表
-            filterUserShifts();
-            
-            // 筛选指定年份和月份的班表
-            let filteredShifts = currentUserShifts.filter(shift => {
-                if (!shift.shiftDate) return false;
-                const shiftYear = shift.shiftDate.split('-')[0];
-                const shiftMonth = shift.shiftDate.split('-')[1];
-                return shiftYear === selectedYear && shiftMonth === selectedMonth;
-            });
-            
-            logDebug(`筛选后的班表数量: ${filteredShifts.length}`);
-            
-            if (filteredShifts.length === 0) {
-                calendarContainer.innerHTML = `
-                    <div class="empty-state">
-                        <h3>📝 ${selectedYear}年${parseInt(selectedMonth)}月暂无班表数据</h3>
-                        <p>用户: ${currentUserName}</p>
-                    </div>
-                `;
-                return;
-            }
+            // 更新用户信息显示
+            updateUserInfo();
             
             // 生成单月日历
-            calendarContainer.innerHTML = generateMonthCalendar(selectedYear, parseInt(selectedMonth), filteredShifts);
+            calendarContainer.innerHTML = generateMonthCalendar(selectedYear, parseInt(selectedMonth));
         }
 
         // 生成单月日历
-        function generateMonthCalendar(year, month, shifts) {
+        function generateMonthCalendar(year, month) {
             const firstDay = new Date(year, month - 1, 1);
             const lastDay = new Date(year, month, 0);
             const daysInMonth = lastDay.getDate();
@@ -687,10 +865,17 @@
             const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', 
                                '七月', '八月', '九月', '十月', '十一月', '十二月'];
             
+            let title = `${year}年 ${monthNames[month - 1]}`;
+            if (currentUserName) {
+                title += ` - ${currentUserName}的班表`;
+            } else {
+                title += ' - 全局模式 (点击日期查看班次)';
+            }
+            
             let calendarHTML = `
                 <div class="month-section">
                     <div class="month-header">
-                        ${year}年 ${monthNames[month - 1]} - ${currentUserName}的班表
+                        ${title}
                     </div>
                     <div class="weekdays">
                         <div class="weekday">周日</div>
@@ -712,20 +897,24 @@
             // 填充当月日期
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-                const dayShifts = shifts.filter(shift => shift.shiftDate === dateStr);
                 
-                calendarHTML += `<div class="day">`;
+                calendarHTML += `<div class="day" onclick="handleDayClick('${dateStr}')">`;
                 calendarHTML += `<div class="day-number">${day}</div>`;
                 
-                dayShifts.forEach(shift => {
-                    calendarHTML += `
-                        <div class="shift-item shift-${shift.shiftCode}" 
-                             title="${shift.shiftCode}班 ${shift.startTime}-${shift.endTime}"
-                             onclick="showShiftDetails('${shift.shiftCode}', '${shift.startTime}', '${shift.endTime}')">
-                            ${shift.shiftCode}班<br>${shift.startTime}-${shift.endTime}
-                        </div>
-                    `;
-                });
+                // 如果是个人模式，显示该用户的班次
+                if (currentUserName) {
+                    const dayShifts = currentUserShifts.filter(shift => shift.shiftDate === dateStr);
+                    
+                    dayShifts.forEach(shift => {
+                        calendarHTML += `
+                            <div class="shift-item shift-${shift.shiftCode}" 
+                                 title="${shift.shiftCode}班 ${shift.startTime}-${shift.endTime}"
+                                 onclick="event.stopPropagation(); showShiftDetails('${shift.shiftCode}', '${shift.startTime}', '${shift.endTime}')">
+                                ${shift.shiftCode}班<br>${shift.startTime}-${shift.endTime}
+                            </div>
+                        `;
+                    });
+                }
                 
                 calendarHTML += `</div>`;
             }
@@ -745,6 +934,75 @@
             return calendarHTML;
         }
 
+        // 处理日期点击
+        function handleDayClick(dateStr) {
+            // 如果是个人模式，不处理日期点击
+            if (currentUserName) {
+                return;
+            }
+            
+            // 全局模式：显示该日期的所有班次
+            showDayShifts(dateStr);
+        }
+
+        // 显示日期班次详情
+        function showDayShifts(dateStr) {
+            const dayShifts = allScheduleData.filter(shift => shift.shiftDate === dateStr);
+            
+            // 过滤掉排除的班次
+            const filteredShifts = dayShifts.filter(shift => 
+                !CONFIG.EXCLUDED_SHIFTS.includes(shift.shiftCode)
+            );
+            
+            const modalTitle = document.getElementById('modalTitle');
+            const dayShiftsContainer = document.getElementById('dayShifts');
+            
+            // 设置模态框标题
+            const dateObj = new Date(dateStr);
+            const formattedDate = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
+            modalTitle.textContent = `${formattedDate} 班次安排`;
+            
+            // 清空容器
+            dayShiftsContainer.innerHTML = '';
+            
+            if (filteredShifts.length === 0) {
+                dayShiftsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <h3>当日无班次安排</h3>
+                        <p>${formattedDate} 没有安排班次</p>
+                    </div>
+                `;
+            } else {
+                // 添加班次项
+                filteredShifts.forEach(shift => {
+                    const shiftItem = document.createElement('div');
+                    shiftItem.className = 'day-shift-item';
+                    
+                    // 检查是否为排除的班次
+                    const isExcluded = CONFIG.EXCLUDED_SHIFTS.includes(shift.shiftCode);
+                    if (isExcluded) {
+                        shiftItem.className += ' excluded';
+                    }
+                    
+                    shiftItem.innerHTML = `
+                        <div class="shift-name">${shift.userName} - ${shift.shiftCode}班</div>
+                        <div class="shift-time">${shift.startTime} - ${shift.endTime}</div>
+                    `;
+                    
+                    dayShiftsContainer.appendChild(shiftItem);
+                });
+            }
+            
+            // 显示模态框
+            document.getElementById('dayModal').style.display = 'flex';
+        }
+
+        // 关闭日期模态框
+        function closeDayModal() {
+            document.getElementById('dayModal').style.display = 'none';
+        }
+
+        // 显示班次详情
         function showShiftDetails(shiftCode, startTime, endTime) {
             alert(`班次详情:\n\n班次: ${shiftCode}班\n时间: ${startTime} - ${endTime}`);
         }
@@ -766,6 +1024,13 @@
             // 绑定筛选器事件 - 实时刷新
             document.getElementById('yearSelect').addEventListener('change', renderCalendar);
             document.getElementById('monthSelect').addEventListener('change', renderCalendar);
+            
+            // 点击页面其他地方关闭搜索结果
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.user-search-container')) {
+                    document.getElementById('searchResults').style.display = 'none';
+                }
+            });
             
             // 加载数据
             loadScheduleData();
