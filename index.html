@@ -508,7 +508,7 @@
         <div class="header">
             <div class="logo-title">
                 <img src="LOGO.png" alt="VXI-Mammotion Logo" class="logo" onerror="this.style.display='none'">
-                <h1>VXI-Mammotion班表</h1>
+                <h1>VXI-MM班表</h1>
             </div>
             <div class="tips">点击用户身份可重新选择 | 未选择身份时可点击日期查看当天所有班次</div>
             <div class="user-info" id="userInfo" onclick="showUserSelector()">
@@ -516,7 +516,7 @@
             </div>
             <div class="user-selector" id="userSelector" style="display: none;">
                 <div class="user-search-container">
-                    <input type="text" id="userSearch" class="user-search" placeholder="搜索员工姓名..." oninput="filterUsers()">
+                    <input type="text" id="userSearch" class="user-search" placeholder="手动输入完整姓名..." oninput="filterUsers()">
                     <div class="search-results" id="searchResults"></div>
                 </div>
                 <button onclick="confirmUserSelection()">确认身份</button>
@@ -604,33 +604,18 @@
         const HOLIDAY_DATA = {
             // 2025年法定节假日
             "2025-01-01": { type: "holiday", name: "元旦" },
-            "2025-01-02": { type: "holiday", name: "元旦" },
-            "2025-01-03": { type: "holiday", name: "元旦" },
             "2025-01-28": { type: "holiday", name: "春节" },
             "2025-01-29": { type: "holiday", name: "春节" },
             "2025-01-30": { type: "holiday", name: "春节" },
             "2025-01-31": { type: "holiday", name: "春节" },
-            "2025-02-01": { type: "holiday", name: "春节" },
-            "2025-02-02": { type: "holiday", name: "春节" },
-            "2025-02-03": { type: "holiday", name: "春节" },
             "2025-04-04": { type: "holiday", name: "清明节" },
-            "2025-04-05": { type: "holiday", name: "清明节" },
-            "2025-04-06": { type: "holiday", name: "清明节" },
             "2025-05-01": { type: "holiday", name: "劳动节" },
-            "2025-05-02": { type: "holiday", name: "劳动节" },
-            "2025-05-03": { type: "holiday", name: "劳动节" },
-            "2025-06-08": { type: "holiday", name: "端午节" },
-            "2025-06-09": { type: "holiday", name: "端午节" },
-            "2025-06-10": { type: "holiday", name: "端午节" },
-            "2025-09-29": { type: "holiday", name: "中秋节" },
-            "2025-09-30": { type: "holiday", name: "中秋节" },
+            "2025-05-31": { type: "holiday", name: "端午节" },
+            "2025-10-06": { type: "holiday", name: "中秋节" },
             "2025-10-01": { type: "holiday", name: "国庆节" },
             "2025-10-02": { type: "holiday", name: "国庆节" },
             "2025-10-03": { type: "holiday", name: "国庆节" },
-            "2025-10-04": { type: "holiday", name: "国庆节" },
-            "2025-10-05": { type: "holiday", name: "国庆节" },
-            "2025-10-06": { type: "holiday", name: "国庆节" },
-            "2025-10-07": { type: "holiday", name: "国庆节" },
+            
             
             // 2025年调休工作日
             "2025-01-26": { type: "workday", name: "调休上班" },
@@ -1243,3 +1228,4 @@
     </script>
 </body>
 </html>
+
