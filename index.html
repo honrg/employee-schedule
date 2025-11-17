@@ -252,19 +252,6 @@
             background: #e9ecef;
         }
         
-        /* 节假日样式 */
-        .day.holiday {
-            background: #ffebee; /* 法定节假日 - 深红色背景 */
-        }
-        
-        .day.weekend {
-            background: #e3f2fd; /* 普通休息日 - 浅蓝色背景 */
-        }
-        
-        .day.workday {
-            background: #fffde7; /* 工作日 - 淡黄色背景 */
-        }
-        
         .day-number {
             font-weight: bold;
             margin-bottom: 5px;
@@ -416,42 +403,6 @@
             vertical-align: middle;
         }
         
-        .legend {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 12px;
-        }
-        
-        .legend-color {
-            width: 15px;
-            height: 15px;
-            border-radius: 3px;
-        }
-        
-        .legend-holiday {
-            background: #ffebee;
-            border: 1px solid #e57373;
-        }
-        
-        .legend-weekend {
-            background: #e3f2fd;
-            border: 1px solid #64b5f6;
-        }
-        
-        .legend-workday {
-            background: #fffde7;
-            border: 1px solid #fdd835;
-        }
-        
         .debug-info {
             background: #f8f9fa;
             padding: 15px;
@@ -495,11 +446,6 @@
                 width: 95%;
                 padding: 20px;
             }
-            
-            .legend {
-                flex-direction: column;
-                align-items: center;
-            }
         }
     </style>
 </head>
@@ -508,7 +454,7 @@
         <div class="header">
             <div class="logo-title">
                 <img src="LOGO.png" alt="VXI-Mammotion Logo" class="logo" onerror="this.style.display='none'">
-                <h1>VXI-MM班表</h1>
+                <h1>VXI-Mammotion班表</h1>
             </div>
             <div class="tips">点击用户身份可重新选择 | 未选择身份时可点击日期查看当天所有班次</div>
             <div class="user-info" id="userInfo" onclick="showUserSelector()">
@@ -516,25 +462,11 @@
             </div>
             <div class="user-selector" id="userSelector" style="display: none;">
                 <div class="user-search-container">
-                    <input type="text" id="userSearch" class="user-search" placeholder="手动输入完整姓名..." oninput="filterUsers()">
+                    <input type="text" id="userSearch" class="user-search" placeholder="搜索员工姓名..." oninput="filterUsers()">
                     <div class="search-results" id="searchResults"></div>
                 </div>
                 <button onclick="confirmUserSelection()">确认身份</button>
                 <button class="secondary" onclick="clearUserSelection()">取消</button>
-            </div>
-            <div class="legend">
-                <div class="legend-item">
-                    <div class="legend-color legend-holiday"></div>
-                    <span>法定节假日</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color legend-weekend"></div>
-                    <span>周末/调休</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color legend-workday"></div>
-                    <span>工作日</span>
-                </div>
             </div>
         </div>
         
@@ -598,32 +530,6 @@
             DATA_URL: 'schedule.csv',
             EXCLUDED_SHIFTS: ['休', '离职'],
             CACHE_DURATION: 15 * 60 * 1000 // 15分钟缓存
-        };
-
-        // 节假日数据 - 2025年示例
-        const HOLIDAY_DATA = {
-            // 2025年法定节假日
-            "2025-01-01": { type: "holiday", name: "元旦" },
-            "2025-01-28": { type: "holiday", name: "春节" },
-            "2025-01-29": { type: "holiday", name: "春节" },
-            "2025-01-30": { type: "holiday", name: "春节" },
-            "2025-01-31": { type: "holiday", name: "春节" },
-            "2025-04-04": { type: "holiday", name: "清明节" },
-            "2025-05-01": { type: "holiday", name: "劳动节" },
-            "2025-05-31": { type: "holiday", name: "端午节" },
-            "2025-10-06": { type: "holiday", name: "中秋节" },
-            "2025-10-01": { type: "holiday", name: "国庆节" },
-            "2025-10-02": { type: "holiday", name: "国庆节" },
-            "2025-10-03": { type: "holiday", name: "国庆节" },
-            
-            
-            // 2025年调休工作日
-            "2025-01-26": { type: "workday", name: "调休上班" },
-            "2025-02-08": { type: "workday", name: "调休上班" },
-            "2025-04-27": { type: "workday", name: "调休上班" },
-            "2025-05-04": { type: "workday", name: "调休上班" },
-            "2025-09-28": { type: "workday", name: "调休上班" },
-            "2025-10-11": { type: "workday", name: "调休上班" }
         };
 
         let allScheduleData = [];
@@ -760,7 +666,7 @@
             updateSearchResults();
         }
 
-        // 过滤用户
+        // 过滤用户 - 修复搜索功能，不区分大小写
         function filterUsers() {
             const searchTerm = document.getElementById('userSearch').value.toLowerCase();
             
@@ -803,7 +709,7 @@
             searchResults.style.display = 'block';
         }
 
-        // 确认用户选择
+        // 确认用户选择 - 修复手动输入完整姓名的BUG
         function confirmUserSelection() {
             const selectedUserName = document.getElementById('userSearch').value.trim();
             
@@ -812,13 +718,18 @@
                 return;
             }
             
-            // 检查用户是否存在
-            if (!availableUsers.includes(selectedUserName)) {
+            // 检查用户是否存在（不区分大小写）
+            const matchedUser = availableUsers.find(user => 
+                user.toLowerCase() === selectedUserName.toLowerCase()
+            );
+            
+            if (!matchedUser) {
                 alert('未找到该员工，请检查姓名是否正确');
                 return;
             }
             
-            currentUserName = selectedUserName;
+            // 使用匹配到的原始大小写的用户名
+            currentUserName = matchedUser;
             updateUserInfo();
             
             // 隐藏选择器
@@ -862,7 +773,7 @@
             return Array.from(userSet).sort();
         }
 
-        // 解析CSV数据
+        // 解析CSV数据 - 修复日期格式问题
         function parseCSV(csvText) {
             const lines = csvText.split('\n');
             const result = [];
@@ -891,28 +802,59 @@
             return result;
         }
 
-        // 格式化日期
+        // 格式化日期 - 修复1-9号日期格式问题
         function formatDate(dateValue) {
             if (!dateValue) return '';
+            
+            // 如果是Date对象
+            if (dateValue instanceof Date) {
+                return dateValue.toISOString().split('T')[0];
+            }
+            
             const dateStr = String(dateValue).trim();
+            
+            // 处理Excel序列号日期
+            if (/^\d+$/.test(dateStr)) {
+                const excelDate = parseInt(dateStr);
+                const date = new Date((excelDate - 25569) * 86400 * 1000);
+                return date.toISOString().split('T')[0];
+            }
+            
+            // 处理各种日期格式
             if (dateStr.includes('/')) {
                 const parts = dateStr.split('/');
                 if (parts.length === 3) {
-                    // 处理格式：年/月/日
                     let year = parts[0];
                     let month = parts[1];
                     let day = parts[2];
+                    
+                    // 确保月份和日期是两位数
+                    if (month.length === 1) month = '0' + month;
+                    if (day.length === 1) day = '0' + day;
                     
                     // 如果年份是2位数，补全为4位数
                     if (year.length === 2) {
                         year = '20' + year;
                     }
                     
-                    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    return `${year}-${month}-${day}`;
                 }
             }
             
             if (dateStr.includes('-')) {
+                // 处理已有的YYYY-MM-DD格式，确保月份和日期是两位数
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    let year = parts[0];
+                    let month = parts[1];
+                    let day = parts[2];
+                    
+                    // 确保月份和日期是两位数
+                    if (month.length === 1) month = '0' + month;
+                    if (day.length === 1) day = '0' + day;
+                    
+                    return `${year}-${month}-${day}`;
+                }
                 return dateStr.split(' ')[0]; // 去除时间部分
             }
             
@@ -922,8 +864,30 @@
         // 格式化时间
         function formatTime(timeValue) {
             if (!timeValue) return '09:00';
+            
+            // 处理Excel小数时间
+            if (/^\d+\.\d+$/.test(timeValue)) {
+                const excelTime = parseFloat(timeValue);
+                const totalSeconds = Math.round(excelTime * 24 * 60 * 60);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            }
+            
             const timeStr = String(timeValue).trim();
-            if (timeStr.includes(':')) return timeStr.substring(0, 5);
+            
+            // 处理时间格式
+            if (timeStr.includes(':')) {
+                // 确保时间是HH:MM格式
+                const parts = timeStr.split(':');
+                if (parts.length >= 2) {
+                    const hours = parts[0].padStart(2, '0');
+                    const minutes = parts[1].padStart(2, '0');
+                    return `${hours}:${minutes}`;
+                }
+                return timeStr.substring(0, 5); // 只取HH:mm部分
+            }
+            
             return timeStr;
         }
 
@@ -936,29 +900,6 @@
             
             currentUserShifts = allScheduleData.filter(shift => shift.userName === currentUserName);
             logDebug(`用户 ${currentUserName} 的班表数量: ${currentUserShifts.length}`);
-        }
-
-        // 获取日期类型（节假日、周末、工作日）
-        function getDateType(dateStr) {
-            // 检查是否是法定节假日
-            if (HOLIDAY_DATA[dateStr] && HOLIDAY_DATA[dateStr].type === 'holiday') {
-                return 'holiday';
-            }
-            
-            // 检查是否是调休工作日
-            if (HOLIDAY_DATA[dateStr] && HOLIDAY_DATA[dateStr].type === 'workday') {
-                return 'workday';
-            }
-            
-            // 检查是否是周末
-            const date = new Date(dateStr);
-            const dayOfWeek = date.getDay();
-            if (dayOfWeek === 0 || dayOfWeek === 6) {
-                return 'weekend';
-            }
-            
-            // 默认是工作日
-            return 'workday';
         }
 
         // 填充年份和月份筛选器
@@ -1044,7 +985,7 @@
             calendarContainer.innerHTML = generateMonthCalendar(selectedYear, parseInt(selectedMonth));
         }
 
-        // 生成单月日历
+        // 生成单月日历 - 修复1-9号排班显示问题
         function generateMonthCalendar(year, month) {
             const firstDay = new Date(year, month - 1, 1);
             const lastDay = new Date(year, month, 0);
@@ -1083,12 +1024,14 @@
                 calendarHTML += `<div class="day other-month"></div>`;
             }
             
-            // 填充当月日期
+            // 填充当月日期 - 修复1-9号日期格式问题
             for (let day = 1; day <= daysInMonth; day++) {
-                const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-                const dateType = getDateType(dateStr);
+                // 确保日期是两位数格式
+                const dayStr = day.toString().padStart(2, '0');
+                const monthStr = month.toString().padStart(2, '0');
+                const dateStr = `${year}-${monthStr}-${dayStr}`;
                 
-                calendarHTML += `<div class="day ${dateType}" onclick="handleDayClick('${dateStr}')">`;
+                calendarHTML += `<div class="day" onclick="handleDayClick('${dateStr}')">`;
                 calendarHTML += `<div class="day-number">${day}</div>`;
                 
                 // 如果是个人模式，显示该用户的班次
@@ -1228,4 +1171,3 @@
     </script>
 </body>
 </html>
-
