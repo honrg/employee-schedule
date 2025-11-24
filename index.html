@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VXI-Mammotion班表</title>
-    <link rel="icon" href="LOGO.png" type="image/png">
+    <!-- 修改LOGO图片为jsDelivr CDN链接 -->
+    <link rel="icon" href="https://cdn.jsdelivr.net/gh/honrg/employee-schedule@main/LOGO.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -453,7 +454,8 @@
     <div class="container">
         <div class="header">
             <div class="logo-title">
-                <img src="LOGO.png" alt="VXI-Mammotion Logo" class="logo" onerror="this.style.display='none'">
+                <!-- 修改LOGO图片为jsDelivr CDN链接 -->
+                <img src="https://cdn.jsdelivr.net/gh/honrg/employee-schedule@main/LOGO.png" alt="VXI-Mammotion Logo" class="logo" onerror="this.style.display='none'">
                 <h1>VXI-Mammotion班表</h1>
             </div>
             <div class="tips">点击用户身份可重新选择 | 未选择身份时可点击日期查看当天所有班次</div>
@@ -526,8 +528,9 @@
 
     <script>
         // 配置信息
+        // 修改DATA_URL为jsDelivr CDN链接
         const CONFIG = {
-            DATA_URL: 'schedule.csv',
+            DATA_URL: 'https://cdn.jsdelivr.net/gh/honrg/employee-schedule@main/schedule.csv',
             EXCLUDED_SHIFTS: ['休', '离职'],
             CACHE_DURATION: 1 * 60 * 1000 // 15分钟缓存
         };
@@ -603,7 +606,7 @@
                 
                 showLoading('正在加载班表数据...');
                 
-                // 加载CSV数据
+                // 加载CSV数据 - 使用jsDelivr CDN链接
                 const response = await fetch(CONFIG.DATA_URL + '?t=' + Date.now()); // 添加时间戳防止缓存
                 const csvText = await response.text();
                 
@@ -1171,5 +1174,3 @@
     </script>
 </body>
 </html>
-
-
