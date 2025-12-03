@@ -526,651 +526,336 @@
         </div>
     </div>
 
-    <script>
-        // 配置信息
-        // 修改DATA_URL为jsDelivr CDN链接
-        const CONFIG = {
-            DATA_URL: 'https://cdn.jsdelivr.net/gh/honrg/employee-schedule@main/schedule.csv',
-            EXCLUDED_SHIFTS: ['休', '离职'],
-            CACHE_DURATION: 1 * 60 * 1000 // 15分钟缓存
-        };
+   <script>
+    // 配置信息
+    const CONFIG = {
+        DATA_URL: 'https://cdn.jsdelivr.net/gh/honrg/employee-schedule@main/schedule.csv',
+        EXCLUDED_SHIFTS: ['休', '离职'],
+        CACHE_DURATION: 1 * 60 * 1000 // 缓存有效时间，比如 1 分钟
+    };
 
-        let allScheduleData = [];
-        let currentUserName = '';
-        let currentUserShifts = [];
-        let availableUsers = [];
-        let filteredUsers = [];
+    let allScheduleData = [];
+    let currentUserName = '';
+    let currentUserShifts = [];
+    let availableUsers = [];
+    let filteredUsers = [];
 
-        // 缓存功能
-        function getCachedData() {
-            try {
-                const cached = localStorage.getItem('schedule_cache');
-                const lastUpdate = localStorage.getItem('schedule_last_update');
-                
-                if (cached && lastUpdate) {
-                    const age = Date.now() - parseInt(lastUpdate);
-                    if (age < CONFIG.CACHE_DURATION) {
-                        logDebug('使用缓存数据，缓存年龄: ' + Math.round(age/1000) + '秒');
-                        return JSON.parse(cached);
-                    } else {
-                        logDebug('缓存已过期，年龄: ' + Math.round(age/1000) + '秒');
-                    }
-                }
-            } catch (e) {
-                console.warn('缓存读取失败:', e);
-            }
-            return null;
-        }
-
-        function cacheData(data) {
-            try {
-                localStorage.setItem('schedule_cache', JSON.stringify(data));
-                localStorage.setItem('schedule_last_update', Date.now().toString());
-                logDebug('数据已缓存');
-            } catch (e) {
-                console.warn('缓存存储失败:', e);
-            }
-        }
-
-        // 调试功能 - 仅Sugar用户可见
-        function logDebug(message) {
-            console.log(message);
-            if (currentUserName === 'Sugar') {
-                const debugContent = document.getElementById('debugContent');
-                const debugInfo = document.getElementById('debugInfo');
-                if (debugContent && debugInfo.style.display !== 'none') {
-                    const timestamp = new Date().toLocaleTimeString();
-                    debugContent.innerHTML += `<div><strong>[${timestamp}]</strong> ${message}</div>`;
+    function getCachedData() {
+        try {
+            const cached = localStorage.getItem('schedule_cache');
+            const lastUpdate = localStorage.getItem('schedule_last_update');
+            if (cached && lastUpdate) {
+                const age = Date.now() - parseInt(lastUpdate, 10);
+                if (age < CONFIG.CACHE_DURATION) {
+                    return JSON.parse(cached);
                 }
             }
+        } catch (e) {
+            console.warn('缓存读取失败:', e);
         }
+        return null;
+    }
 
-        function toggleDebug() {
-            if (currentUserName === 'Sugar') {
-                const debugInfo = document.getElementById('debugInfo');
-                debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
-            }
+    function cacheData(data) {
+        try {
+            localStorage.setItem('schedule_cache', JSON.stringify(data));
+            localStorage.setItem('schedule_last_update', Date.now().toString());
+        } catch (e) {
+            console.warn('缓存存储失败:', e);
         }
+    }
 
-        // 加载数据
-        async function loadScheduleData() {
-            try {
-                // 先尝试从缓存加载
-                const cachedData = getCachedData();
-                if (cachedData) {
-                    allScheduleData = cachedData;
-                    logDebug('从缓存加载数据: ' + allScheduleData.length + ' 条记录');
-                    initializeAfterDataLoad();
-                    return;
-                }
-                
-                showLoading('正在加载班表数据...');
-                
-                // 加载CSV数据 - 使用jsDelivr CDN链接
-                const response = await fetch(CONFIG.DATA_URL + '?t=' + Date.now()); // 添加时间戳防止缓存
-                const csvText = await response.text();
-                
-                // 解析CSV数据
-                allScheduleData = parseCSV(csvText);
-                logDebug('解析到的班表数据: ' + allScheduleData.length + ' 条记录');
-                
-                if (allScheduleData.length === 0) {
-                    throw new Error('CSV文件中没有有效数据');
-                }
-                
-                // 缓存数据
-                cacheData(allScheduleData);
-                
+    async function loadScheduleData() {
+        try {
+            const cachedData = getCachedData();
+            if (cachedData) {
+                allScheduleData = cachedData;
                 initializeAfterDataLoad();
-                
-            } catch (error) {
-                console.error('加载失败:', error);
-                // 尝试使用缓存数据
-                const cachedData = getCachedData();
-                if (cachedData) {
-                    allScheduleData = cachedData;
-                    logDebug('网络失败，使用缓存数据');
-                    initializeAfterDataLoad();
-                } else {
-                    showError('数据加载失败: ' + error.message);
-                }
+                return;
             }
-        }
 
-        function initializeAfterDataLoad() {
-            // 获取所有可用的用户
-            availableUsers = getAllUsers();
-            filteredUsers = [...availableUsers];
-            logDebug('可用用户: ' + availableUsers.join(', '));
-            
-            // 初始化年份和月份筛选器
-            populateYearMonthFilter();
-            
-            // 渲染日历
-            renderCalendar();
-            
-            // 如果是Sugar用户，显示调试按钮
-            if (availableUsers.includes('Sugar')) {
-                document.getElementById('debugButton').style.display = 'inline-block';
+            showLoading('正在加载班表数据...');
+
+            // 在 URL 后加时间戳，避免 CDN/浏览器缓存
+            const fetchUrl = CONFIG.DATA_URL + '?t=' + Date.now();
+            const response = await fetch(fetchUrl);
+            const csvText = await response.text();
+
+            allScheduleData = parseCSV(csvText);
+            if (allScheduleData.length === 0) {
+                throw new Error('CSV 文件中没有有效数据');
             }
-        }
 
-        // 显示用户选择器
-        function showUserSelector() {
-            const userSelector = document.getElementById('userSelector');
-            const userInfo = document.getElementById('userInfo');
-            
-            userSelector.style.display = 'block';
-            userInfo.style.display = 'none';
-            
-            // 重置搜索
-            document.getElementById('userSearch').value = '';
-            filteredUsers = [...availableUsers];
-            updateSearchResults();
-        }
-
-        // 过滤用户 - 修复搜索功能，不区分大小写
-        function filterUsers() {
-            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
-            
-            if (searchTerm === '') {
-                filteredUsers = [...availableUsers];
+            cacheData(allScheduleData);
+            initializeAfterDataLoad();
+        } catch (error) {
+            console.error('加载失败:', error);
+            const cachedData = getCachedData();
+            if (cachedData) {
+                allScheduleData = cachedData;
+                initializeAfterDataLoad();
             } else {
-                filteredUsers = availableUsers.filter(user => 
-                    user.toLowerCase().includes(searchTerm)
-                );
+                showError('数据加载失败: ' + error.message);
             }
-            
-            updateSearchResults();
         }
+    }
 
-        // 更新搜索结果
-        function updateSearchResults() {
-            const searchResults = document.getElementById('searchResults');
-            searchResults.innerHTML = '';
-            
-            if (filteredUsers.length === 0) {
-                const noResult = document.createElement('div');
-                noResult.className = 'search-result';
-                noResult.textContent = '无匹配结果';
-                noResult.style.color = '#999';
-                noResult.style.cursor = 'default';
-                searchResults.appendChild(noResult);
-            } else {
-                filteredUsers.forEach(user => {
-                    const result = document.createElement('div');
-                    result.className = 'search-result';
-                    result.textContent = user;
-                    result.onclick = () => {
-                        document.getElementById('userSearch').value = user;
-                        searchResults.style.display = 'none';
-                    };
-                    searchResults.appendChild(result);
+    function parseCSV(csvText) {
+        const lines = csvText.split('\n');
+        const result = [];
+        if (lines.length === 0) return result;
+
+        const headers = lines[0].split(',').map(h => h.trim());
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            const values = line.split(',').map(v => v.trim());
+            if (values.length >= 3) {
+                result.push({
+                    userName: values[0] || '未知用户',
+                    shiftCode: values[1] || '',
+                    shiftDate: formatDate(values[2]),
+                    startTime: formatTime(values[3] || ''),
+                    endTime: formatTime(values[4] || '')
                 });
             }
-            
-            searchResults.style.display = 'block';
         }
+        return result;
+    }
 
-        // 确认用户选择 - 修复手动输入完整姓名的BUG
-        function confirmUserSelection() {
-            const selectedUserName = document.getElementById('userSearch').value.trim();
-            
-            if (!selectedUserName) {
-                alert('请选择有效的员工姓名');
-                return;
-            }
-            
-            // 检查用户是否存在（不区分大小写）
-            const matchedUser = availableUsers.find(user => 
-                user.toLowerCase() === selectedUserName.toLowerCase()
-            );
-            
-            if (!matchedUser) {
-                alert('未找到该员工，请检查姓名是否正确');
-                return;
-            }
-            
-            // 使用匹配到的原始大小写的用户名
-            currentUserName = matchedUser;
-            updateUserInfo();
-            
-            // 隐藏选择器
-            document.getElementById('userSelector').style.display = 'none';
-            document.getElementById('userInfo').style.display = 'inline-block';
-            
-            // 筛选并显示班表
-            filterUserShifts();
-            renderCalendar();
-        }
-
-        // 清除用户选择
-        function clearUserSelection() {
-            currentUserName = '';
-            updateUserInfo();
-            document.getElementById('userSelector').style.display = 'none';
-            document.getElementById('userInfo').style.display = 'inline-block';
-            renderCalendar();
-        }
-
-        // 更新用户信息显示
-        function updateUserInfo() {
-            const userInfo = document.getElementById('userInfo');
-            
-            if (currentUserName) {
-                userInfo.textContent = `当前身份: ${currentUserName}`;
-                userInfo.className = 'user-info';
-            } else {
-                userInfo.textContent = '点击选择身份 (全局模式)';
-                userInfo.className = 'user-info global-mode';
+    function formatDate(dateValue) {
+        if (!dateValue) return '';
+        const dateStr = String(dateValue).trim();
+        if (dateStr.includes('/')) {
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                let [year, month, day] = parts;
+                if (month.length === 1) month = '0' + month;
+                if (day.length === 1) day = '0' + day;
+                if (year.length === 2) year = '20' + year;
+                return `${year}-${month}-${day}`;
             }
         }
-
-        // 获取所有用户
-        function getAllUsers() {
-            const userSet = new Set();
-            allScheduleData.forEach(item => {
-                userSet.add(item.userName);
-            });
-            
-            return Array.from(userSet).sort();
+        if (dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                let [year, month, day] = parts;
+                if (month.length === 1) month = '0' + month;
+                if (day.length === 1) day = '0' + day;
+                return `${year}-${month}-${day}`;
+            }
+            return dateStr.split(' ')[0];
         }
+        return dateStr;
+    }
 
-        // 解析CSV数据 - 修复日期格式问题
-        function parseCSV(csvText) {
-            const lines = csvText.split('\n');
-            const result = [];
-            
-            if (lines.length === 0) return result;
-            
-            const headers = lines[0].split(',').map(header => header.trim());
-            logDebug('CSV标题: ' + headers.join(', '));
-            
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                
-                const values = line.split(',').map(value => value.trim());
-                if (values.length >= 3) {
-                    result.push({
-                        userName: values[0] || '未知用户',
-                        shiftCode: values[1] || 'A',
-                        shiftDate: formatDate(values[2]),
-                        startTime: formatTime(values[3] || '09:00'),
-                        endTime: formatTime(values[4] || '18:00')
-                    });
-                }
+    function formatTime(timeValue) {
+        if (!timeValue) return '';
+        const timeStr = String(timeValue).trim();
+        if (timeStr.includes(':')) {
+            const parts = timeStr.split(':');
+            if (parts.length >= 2) {
+                const hh = parts[0].padStart(2, '0');
+                const mm = parts[1].padStart(2, '0');
+                return `${hh}:${mm}`;
             }
-            
-            return result;
-        }
-
-        // 格式化日期 - 修复1-9号日期格式问题
-        function formatDate(dateValue) {
-            if (!dateValue) return '';
-            
-            // 如果是Date对象
-            if (dateValue instanceof Date) {
-                return dateValue.toISOString().split('T')[0];
-            }
-            
-            const dateStr = String(dateValue).trim();
-            
-            // 处理Excel序列号日期
-            if (/^\d+$/.test(dateStr)) {
-                const excelDate = parseInt(dateStr);
-                const date = new Date((excelDate - 25569) * 86400 * 1000);
-                return date.toISOString().split('T')[0];
-            }
-            
-            // 处理各种日期格式
-            if (dateStr.includes('/')) {
-                const parts = dateStr.split('/');
-                if (parts.length === 3) {
-                    let year = parts[0];
-                    let month = parts[1];
-                    let day = parts[2];
-                    
-                    // 确保月份和日期是两位数
-                    if (month.length === 1) month = '0' + month;
-                    if (day.length === 1) day = '0' + day;
-                    
-                    // 如果年份是2位数，补全为4位数
-                    if (year.length === 2) {
-                        year = '20' + year;
-                    }
-                    
-                    return `${year}-${month}-${day}`;
-                }
-            }
-            
-            if (dateStr.includes('-')) {
-                // 处理已有的YYYY-MM-DD格式，确保月份和日期是两位数
-                const parts = dateStr.split('-');
-                if (parts.length === 3) {
-                    let year = parts[0];
-                    let month = parts[1];
-                    let day = parts[2];
-                    
-                    // 确保月份和日期是两位数
-                    if (month.length === 1) month = '0' + month;
-                    if (day.length === 1) day = '0' + day;
-                    
-                    return `${year}-${month}-${day}`;
-                }
-                return dateStr.split(' ')[0]; // 去除时间部分
-            }
-            
-            return dateStr;
-        }
-
-        // 格式化时间
-        function formatTime(timeValue) {
-            if (!timeValue) return '09:00';
-            
-            // 处理Excel小数时间
-            if (/^\d+\.\d+$/.test(timeValue)) {
-                const excelTime = parseFloat(timeValue);
-                const totalSeconds = Math.round(excelTime * 24 * 60 * 60);
-                const hours = Math.floor(totalSeconds / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-            }
-            
-            const timeStr = String(timeValue).trim();
-            
-            // 处理时间格式
-            if (timeStr.includes(':')) {
-                // 确保时间是HH:MM格式
-                const parts = timeStr.split(':');
-                if (parts.length >= 2) {
-                    const hours = parts[0].padStart(2, '0');
-                    const minutes = parts[1].padStart(2, '0');
-                    return `${hours}:${minutes}`;
-                }
-                return timeStr.substring(0, 5); // 只取HH:mm部分
-            }
-            
             return timeStr;
         }
+        return timeStr;
+    }
 
-        // 筛选当前用户的班表
-        function filterUserShifts() {
-            if (!currentUserName) {
-                currentUserShifts = [];
-                return;
-            }
-            
-            currentUserShifts = allScheduleData.filter(shift => shift.userName === currentUserName);
-            logDebug(`用户 ${currentUserName} 的班表数量: ${currentUserShifts.length}`);
+    function getAllUsers() {
+        const userSet = new Set();
+        allScheduleData.forEach(item => {
+            userSet.add(item.userName);
+        });
+        return Array.from(userSet).sort();
+    }
+
+    function filterUserShifts() {
+        if (!currentUserName) {
+            currentUserShifts = [];
+        } else {
+            currentUserShifts = allScheduleData.filter(s => s.userName === currentUserName);
         }
+    }
 
-        // 填充年份和月份筛选器
-        function populateYearMonthFilter() {
-            const yearSelect = document.getElementById('yearSelect');
-            const monthSelect = document.getElementById('monthSelect');
-            
-            // 清空现有选项
-            yearSelect.innerHTML = '<option value="">选择年份</option>';
-            monthSelect.innerHTML = '<option value="">选择月份</option>';
-            
-            // 添加月份选项
-            for (let i = 1; i <= 12; i++) {
-                const option = document.createElement('option');
-                option.value = i.toString().padStart(2, '0');
-                option.textContent = `${i}月`;
-                monthSelect.appendChild(option);
-            }
-            
-            // 获取所有年份
-            const years = new Set();
-            allScheduleData.forEach(shift => {
-                if (shift.shiftDate) {
-                    const year = shift.shiftDate.split('-')[0];
-                    years.add(year);
-                }
-            });
-            
-            // 添加年份选项（按降序排列，最新的年份在前面）
-            const yearsArray = Array.from(years).sort((a, b) => b - a);
-            yearsArray.forEach(year => {
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = `${year}年`;
-                yearSelect.appendChild(option);
-            });
-            
-            // 默认选择当前年份和月份
-            const now = new Date();
-            const currentYear = now.getFullYear().toString();
-            const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
-            
-            if (yearsArray.includes(currentYear)) {
-                yearSelect.value = currentYear;
-            } else if (yearsArray.length > 0) {
-                yearSelect.value = yearsArray[0];
-            }
-            
-            monthSelect.value = currentMonth;
-            
-            logDebug('可选的年份: ' + yearsArray.join(', '));
+    function populateYearMonthFilter() {
+        const yearSelect = document.getElementById('yearSelect');
+        const monthSelect = document.getElementById('monthSelect');
+        yearSelect.innerHTML = '<option value="">选择年份</option>';
+        monthSelect.innerHTML = '<option value="">选择月份</option>';
+        for (let i = 1; i <= 12; i++) {
+            const opt = document.createElement('option');
+            opt.value = i.toString().padStart(2, '0');
+            opt.textContent = `${i}月`;
+            monthSelect.appendChild(opt);
         }
+        const years = new Set();
+        allScheduleData.forEach(s => {
+            if (s.shiftDate) {
+                const y = s.shiftDate.split('-')[0];
+                years.add(y);
+            }
+        });
+        const yearsArr = Array.from(years).sort((a, b) => b - a);
+        yearsArr.forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = `${y}年`;
+            yearSelect.appendChild(opt);
+        });
 
-        // 刷新数据
-        function refreshData() {
-            // 清除缓存
-            localStorage.removeItem('schedule_cache');
-            localStorage.removeItem('schedule_last_update');
-            loadScheduleData();
+        const now = new Date();
+        const cy = now.getFullYear().toString();
+        const cm = (now.getMonth() + 1).toString().padStart(2, '0');
+        if (yearsArr.includes(cy)) {
+            yearSelect.value = cy;
+        } else if (yearsArr.length > 0) {
+            yearSelect.value = yearsArr[0];
         }
+        monthSelect.value = cm;
+    }
 
-        // 渲染日历
-        function renderCalendar() {
-            const calendarContainer = document.getElementById('calendarContainer');
-            const selectedYear = document.getElementById('yearSelect').value;
-            const selectedMonth = document.getElementById('monthSelect').value;
-            
-            // 检查是否已选择年份和月份
-            if (!selectedYear || !selectedMonth) {
-                calendarContainer.innerHTML = `
-                    <div class="empty-state">
-                        <h3>请选择年份和月份</h3>
-                        <p>在上方选择要查看的年份和月份</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // 更新用户信息显示
-            updateUserInfo();
-            
-            // 生成单月日历
-            calendarContainer.innerHTML = generateMonthCalendar(selectedYear, parseInt(selectedMonth));
-        }
-
-        // 生成单月日历 - 修复1-9号排班显示问题
-        function generateMonthCalendar(year, month) {
-            const firstDay = new Date(year, month - 1, 1);
-            const lastDay = new Date(year, month, 0);
-            const daysInMonth = lastDay.getDate();
-            const startingDay = firstDay.getDay();
-            
-            const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', 
-                               '七月', '八月', '九月', '十月', '十一月', '十二月'];
-            
-            let title = `${year}年 ${monthNames[month - 1]}`;
-            if (currentUserName) {
-                title += ` - ${currentUserName}的班表`;
-            } else {
-                title += ' - 全局模式 (点击日期查看班次)';
-            }
-            
-            let calendarHTML = `
-                <div class="month-section">
-                    <div class="month-header">
-                        ${title}
-                    </div>
-                    <div class="weekdays">
-                        <div class="weekday">周日</div>
-                        <div class="weekday">周一</div>
-                        <div class="weekday">周二</div>
-                        <div class="weekday">周三</div>
-                        <div class="weekday">周四</div>
-                        <div class="weekday">周五</div>
-                        <div class="weekday">周六</div>
-                    </div>
-                    <div class="days-grid">
-            `;
-            
-            // 填充空白日期（上个月的）
-            for (let i = 0; i < startingDay; i++) {
-                calendarHTML += `<div class="day other-month"></div>`;
-            }
-            
-            // 填充当月日期 - 修复1-9号日期格式问题
-            for (let day = 1; day <= daysInMonth; day++) {
-                // 确保日期是两位数格式
-                const dayStr = day.toString().padStart(2, '0');
-                const monthStr = month.toString().padStart(2, '0');
-                const dateStr = `${year}-${monthStr}-${dayStr}`;
-                
-                calendarHTML += `<div class="day" onclick="handleDayClick('${dateStr}')">`;
-                calendarHTML += `<div class="day-number">${day}</div>`;
-                
-                // 如果是个人模式，显示该用户的班次
-                if (currentUserName) {
-                    const dayShifts = currentUserShifts.filter(shift => shift.shiftDate === dateStr);
-                    
-                    dayShifts.forEach(shift => {
-                        calendarHTML += `
-                            <div class="shift-item shift-${shift.shiftCode}" 
-                                 title="${shift.shiftCode}班 ${shift.startTime}-${shift.endTime}"
-                                 onclick="event.stopPropagation(); showShiftDetails('${shift.shiftCode}', '${shift.startTime}', '${shift.endTime}')">
-                                ${shift.shiftCode}班<br>${shift.startTime}-${shift.endTime}
-                            </div>
-                        `;
-                    });
-                }
-                
-                calendarHTML += `</div>`;
-            }
-            
-            // 填充空白日期（下个月的）
-            const totalCells = 42; // 6行×7列
-            const remainingCells = totalCells - (startingDay + daysInMonth);
-            for (let i = 0; i < remainingCells; i++) {
-                calendarHTML += `<div class="day other-month"></div>`;
-            }
-            
-            calendarHTML += `
-                    </div>
+    function renderCalendar() {
+        const container = document.getElementById('calendarContainer');
+        const selectedYear = document.getElementById('yearSelect').value;
+        const selectedMonth = document.getElementById('monthSelect').value;
+        updateUserInfo();
+        if (!selectedYear || !selectedMonth) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>请选择年份和月份</h3>
+                    <p>在上方选择要查看的年份和月份</p>
                 </div>
             `;
-            
-            return calendarHTML;
+            return;
+        }
+        container.innerHTML = generateMonthCalendar(selectedYear, parseInt(selectedMonth, 10));
+    }
+
+    function generateMonthCalendar(year, month) {
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDay = firstDay.getDay();
+        const monthNames = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+        let title = `${year}年 ${monthNames[month - 1]}`;
+        if (currentUserName) {
+            title += ` - ${currentUserName}的班表`;
+        } else {
+            title += ' - 全局模式 (点击日期查看班次)';
         }
 
-        // 处理日期点击
-        function handleDayClick(dateStr) {
-            // 如果是个人模式，不处理日期点击
+        let html = `<div class="month-section">
+            <div class="month-header">${title}</div>
+            <div class="weekdays">
+                <div class="weekday">周日</div><div class="weekday">周一</div><div class="weekday">周二</div>
+                <div class="weekday">周三</div><div class="weekday">周四</div><div class="weekday">周五</div>
+                <div class="weekday">周六</div>
+            </div>
+            <div class="days-grid">`;
+
+        for (let i = 0; i < startingDay; i++) {
+            html += `<div class="day other-month"></div>`;
+        }
+
+        const monthStr = month.toString().padStart(2, '0');
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dayStr = d.toString().padStart(2, '0');
+            const dateStr = `${year}-${monthStr}-${dayStr}`;
+            html += `<div class="day" onclick="handleDayClick('${dateStr}')">
+                        <div class="day-number">${d}</div>`;
             if (currentUserName) {
-                return;
-            }
-            
-            // 全局模式：显示该日期的所有班次
-            showDayShifts(dateStr);
-        }
-
-        // 显示日期班次详情
-        function showDayShifts(dateStr) {
-            const dayShifts = allScheduleData.filter(shift => shift.shiftDate === dateStr);
-            
-            // 过滤掉排除的班次
-            const filteredShifts = dayShifts.filter(shift => 
-                !CONFIG.EXCLUDED_SHIFTS.includes(shift.shiftCode)
-            );
-            
-            const modalTitle = document.getElementById('modalTitle');
-            const dayShiftsContainer = document.getElementById('dayShifts');
-            
-            // 设置模态框标题
-            const dateObj = new Date(dateStr);
-            const formattedDate = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
-            modalTitle.textContent = `${formattedDate} 班次安排`;
-            
-            // 清空容器
-            dayShiftsContainer.innerHTML = '';
-            
-            if (filteredShifts.length === 0) {
-                dayShiftsContainer.innerHTML = `
-                    <div class="empty-state">
-                        <h3>当日无班次安排</h3>
-                        <p>${formattedDate} 没有安排班次</p>
-                    </div>
-                `;
-            } else {
-                // 添加班次项
-                filteredShifts.forEach(shift => {
-                    const shiftItem = document.createElement('div');
-                    shiftItem.className = 'day-shift-item';
-                    
-                    // 检查是否为排除的班次
-                    const isExcluded = CONFIG.EXCLUDED_SHIFTS.includes(shift.shiftCode);
-                    if (isExcluded) {
-                        shiftItem.className += ' excluded';
-                    }
-                    
-                    shiftItem.innerHTML = `
-                        <div class="shift-name">${shift.userName} - ${shift.shiftCode}班</div>
-                        <div class="shift-time">${shift.startTime} - ${shift.endTime}</div>
-                    `;
-                    
-                    dayShiftsContainer.appendChild(shiftItem);
+                const shifts = currentUserShifts.filter(s => s.shiftDate === dateStr);
+                shifts.forEach(s => {
+                    html += `<div class="shift-item shift-${s.shiftCode}"
+                                title="${s.shiftCode}班 ${s.startTime}-${s.endTime}"
+                                onclick="event.stopPropagation(); showShiftDetails('${s.shiftCode}','${s.startTime}','${s.endTime}')">
+                                ${s.shiftCode}班<br>${s.startTime}-${s.endTime}
+                             </div>`;
                 });
             }
-            
-            // 显示模态框
-            document.getElementById('dayModal').style.display = 'flex';
+            html += `</div>`;
         }
 
-        // 关闭日期模态框
-        function closeDayModal() {
-            document.getElementById('dayModal').style.display = 'none';
+        const totalCells = 42;
+        const used = startingDay + daysInMonth;
+        for (let i = used; i < totalCells; i++) {
+            html += `<div class="day other-month"></div>`;
         }
 
-        // 显示班次详情
-        function showShiftDetails(shiftCode, startTime, endTime) {
-            alert(`班次详情:\n\n班次: ${shiftCode}班\n时间: ${startTime} - ${endTime}`);
-        }
+        html += `</div></div>`;
+        return html;
+    }
 
-        function showLoading(message) {
-            document.getElementById('calendarContainer').innerHTML = `
-                <div class="loading">${message}</div>
+    function handleDayClick(dateStr) {
+        if (currentUserName) return;
+        showDayShifts(dateStr);
+    }
+
+    function showDayShifts(dateStr) {
+        const dayShifts = allScheduleData.filter(s => s.shiftDate === dateStr && !CONFIG.EXCLUDED_SHIFTS.includes(s.shiftCode));
+        const modalTitle = document.getElementById('modalTitle');
+        const container = document.getElementById('dayShifts');
+        const dateObj = new Date(dateStr);
+        modalTitle.textContent = `${dateObj.getFullYear()}年${dateObj.getMonth()+1}月${dateObj.getDate()}日 班次安排`;
+        container.innerHTML = '';
+        if (dayShifts.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>当日无班次安排</h3>
+                    <p>${modalTitle.textContent}</p>
+                </div>
             `;
-        }
-
-        function showError(message) {
-            document.getElementById('calendarContainer').innerHTML = `
-                <div class="error">${message}</div>
-            `;
-        }
-
-        // 页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            // 绑定筛选器事件 - 实时刷新
-            document.getElementById('yearSelect').addEventListener('change', renderCalendar);
-            document.getElementById('monthSelect').addEventListener('change', renderCalendar);
-            
-            // 点击页面其他地方关闭搜索结果
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.user-search-container')) {
-                    document.getElementById('searchResults').style.display = 'none';
-                }
+        } else {
+            dayShifts.forEach(s => {
+                const item = document.createElement('div');
+                item.className = 'day-shift-item';
+                item.innerHTML = `<div class="shift-name">${s.userName} - ${s.shiftCode}班</div>
+                                  <div class="shift-time">${s.startTime} - ${s.endTime}</div>`;
+                container.appendChild(item);
             });
-            
-            // 加载数据
-            loadScheduleData();
+        }
+        document.getElementById('dayModal').style.display = 'flex';
+    }
+
+    function closeDayModal() {
+        document.getElementById('dayModal').style.display = 'none';
+    }
+
+    function updateUserInfo() {
+        const userInfo = document.getElementById('userInfo');
+        if (currentUserName) {
+            userInfo.textContent = `当前身份: ${currentUserName}`;
+            userInfo.className = 'user-info';
+        } else {
+            userInfo.textContent = '点击选择身份 (全局模式)';
+            userInfo.className = 'user-info global-mode';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('yearSelect').addEventListener('change', renderCalendar);
+        document.getElementById('monthSelect').addEventListener('change', renderCalendar);
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.user-search-container')) {
+                const sr = document.getElementById('searchResults');
+                if (sr) sr.style.display = 'none';
+            }
         });
-    </script>
+        loadScheduleData();
+    });
+
+    // 显示 loading / error 的简单函数
+    function showLoading(msg) {
+        document.getElementById('calendarContainer').innerHTML = `<div class="loading">${msg}</div>`;
+    }
+    function showError(msg) {
+        document.getElementById('calendarContainer').innerHTML = `<div class="error">${msg}</div>`;
+    }
+</script>
 </body>
 </html>
+
