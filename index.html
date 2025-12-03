@@ -1,861 +1,240 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VXI-Mammotion班表</title>
-    <!-- 修改LOGO图片为jsDelivr CDN链接 -->
-    <link rel="icon" href="https://cdn.jsdelivr.net/gh/honrg/employee-schedule@main/LOGO.png" type="image/png">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            position: relative;
-        }
-        
-        .logo-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 10px;
-        }
-        
-        .logo {
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
-            object-fit: contain;
-        }
-        
-        .header h1 {
-            font-size: 2.5em;
-            margin: 0;
-        }
-        
-        .header .tips {
-            opacity: 0.8;
-            font-size: 1em;
-            margin-top: 10px;
-            color: #bdc3c7;
-        }
-        
-        .user-info {
-            background: #2ecc71;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            display: inline-block;
-            margin-top: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .user-info:hover {
-            background: #27ae60;
-            transform: scale(1.05);
-        }
-        
-        .user-info.global-mode {
-            background: #3498db;
-        }
-        
-        .user-info.global-mode:hover {
-            background: #2980b9;
-        }
-        
-        .controls {
-            background: #f8f9fa;
-            padding: 20px;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .filter-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        select, button, input {
-            padding: 12px 20px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 16px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        select:focus, button:hover, input:focus {
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-        
-        button {
-            background: #3498db;
-            color: white;
-            border-color: #3498db;
-        }
-        
-        button:hover {
-            background: #2980b9;
-            transform: translateY(-2px);
-        }
-        
-        button.secondary {
-            background: #95a5a6;
-            border-color: #95a5a6;
-        }
-        
-        button.secondary:hover {
-            background: #7f8c8d;
-        }
-        
-        .user-selector {
-            margin-top: 15px;
-            text-align: center;
-        }
-        
-        .user-search-container {
-            position: relative;
-            display: inline-block;
-            margin-right: 10px;
-        }
-        
-        .user-search {
-            padding: 10px 15px;
-            width: 300px;
-            font-size: 14px;
-        }
-        
-        .search-results {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 0 0 8px 8px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-        }
-        
-        .search-result {
-            padding: 10px 15px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .search-result:hover {
-            background: #f8f9fa;
-        }
-        
-        .search-result:last-child {
-            border-bottom: none;
-        }
-        
-        .calendar-container {
-            padding: 20px;
-            min-height: 400px;
-        }
-        
-        .month-section {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            overflow: hidden;
-            margin-bottom: 0;
-        }
-        
-        .month-header {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            font-size: 1.5em;
-            font-weight: bold;
-        }
-        
-        .weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            background: #34495e;
-            color: white;
-        }
-        
-        .weekday {
-            padding: 15px;
-            text-align: center;
-            font-weight: bold;
-            border-right: 1px solid #2c3e50;
-        }
-        
-        .weekday:last-child {
-            border-right: none;
-        }
-        
-        .days-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 1px;
-            background: #e9ecef;
-        }
-        
-        .day {
-            background: white;
-            min-height: 120px;
-            padding: 10px;
-            border: 1px solid #e9ecef;
-            position: relative;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .day:hover {
-            background: #f8f9fa;
-            transform: scale(1.02);
-        }
-        
-        .day.other-month {
-            background: #f8f9fa;
-            color: #adb5bd;
-        }
-        
-        .day.other-month:hover {
-            background: #e9ecef;
-        }
-        
-        .day-number {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #2c3e50;
-            font-size: 14px;
-        }
-        
-        .shift-item {
-            background: #e74c3c;
-            color: white;
-            padding: 4px 6px;
-            margin: 2px 0;
-            border-radius: 4px;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            line-height: 1.2;
-        }
-        
-        .shift-item:hover {
-            transform: scale(1.05);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-        
-        .shift-A { background: #2ecc71; }
-        .shift-B { background: #f39c12; }
-        .shift-C { background: #9b59b6; }
-        .shift-D { background: #e74c3c; }
-        .shift-E { background: #1abc9c; }
-        .shift-F { background: #e67e22; }
-        .shift-G { background: #34495e; }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            font-size: 1.2em;
-            color: #7f8c8d;
-        }
-        
-        .error {
-            background: #e74c3c;
-            color: white;
-            padding: 20px;
-            margin: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #7f8c8d;
-        }
-        
-        .empty-state h3 {
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
-        
-        .day-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-        
-        .modal-title {
-            font-size: 1.5em;
-            color: #2c3e50;
-            margin: 0;
-        }
-        
-        .close-modal {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        
-        .close-modal:hover {
-            background: #c0392b;
-        }
-        
-        .day-shifts {
-            display: grid;
-            gap: 10px;
-        }
-        
-        .day-shift-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #3498db;
-        }
-        
-        .day-shift-item.excluded {
-            opacity: 0.6;
-            border-left-color: #95a5a6;
-        }
-        
-        .shift-name {
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-        
-        .shift-time {
-            color: #7f8c8d;
-            font-size: 14px;
-        }
-        
-        .mode-indicator {
-            display: inline-block;
-            margin-left: 10px;
-            padding: 2px 8px;
-            background: #f39c12;
-            color: white;
-            border-radius: 10px;
-            font-size: 12px;
-            vertical-align: middle;
-        }
-        
-        .debug-info {
-            background: #f8f9fa;
-            padding: 15px;
-            margin: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
-            border-left: 4px solid #3498db;
-            display: none;
-        }
-        
-        @media (max-width: 768px) {
-            .day {
-                min-height: 100px;
-                padding: 5px;
-            }
-            
-            .shift-item {
-                font-size: 10px;
-                padding: 2px 4px;
-            }
-            
-            .filter-group {
-                flex-direction: column;
-            }
-            
-            select, button, input {
-                width: 100%;
-            }
-            
-            .logo-title {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .user-search {
-                width: 100%;
-            }
-            
-            .modal-content {
-                width: 95%;
-                padding: 20px;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VXI-Mammotion班表</title>
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/honrg/employee-schedule@main/LOGO.png" type="image/png">
+<!-- Vue 3 CDN -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>
+/* ------------------------ 原有样式保持 ------------------------ */
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Microsoft YaHei',Arial,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}.container{max-width:1400px;margin:0 auto;background:white;border-radius:15px;box-shadow:0 20px 40px rgba(0,0,0,0.1);overflow:hidden}.header{background:linear-gradient(135deg,#2c3e50,#34495e);color:white;padding:30px;text-align:center;position:relative}.logo-title{display:flex;align-items:center;justify-content:center;gap:15px;margin-bottom:10px}.logo{width:50px;height:50px;border-radius:8px;object-fit:contain}.header h1{font-size:2.5em;margin:0}.header .tips{opacity:.8;font-size:1em;margin-top:10px;color:#bdc3c7}.user-info{background:#2ecc71;color:white;padding:10px 20px;border-radius:20px;display:inline-block;margin-top:15px;cursor:pointer;transition:all .3s ease}.user-info:hover{background:#27ae60;transform:scale(1.05)}.user-info.global-mode{background:#3498db}.user-info.global-mode:hover{background:#2980b9}.controls{background:#f8f9fa;padding:20px;border-bottom:1px solid #e9ecef}.filter-group{display:flex;flex-wrap:wrap;gap:15px;align-items:center;justify-content:center}select,button,input{padding:12px 20px;border:2px solid #e9ecef;border-radius:8px;font-size:16px;background:white;cursor:pointer;transition:all .3s ease}select:focus,button:hover,input:focus{border-color:#3498db;box-shadow:0 0 0 3px rgba(52,152,219,.1)}button{background:#3498db;color:white;border-color:#3498db}button:hover{background:#2980b9;transform:translateY(-2px)}button.secondary{background:#95a5a6;border-color:#95a5a6}button.secondary:hover{background:#7f8c8d}.user-selector{margin-top:15px;text-align:center}.user-search-container{position:relative;display:inline-block;margin-right:10px}.user-search{padding:10px 15px;width:300px;font-size:14px}.search-results{position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #ddd;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:1000;display:none}.search-result{padding:10px 15px;cursor:pointer;border-bottom:1px solid #f0f0f0}.search-result:hover{background:#f8f9fa}.search-result:last-child{border-bottom:none}.calendar-container{padding:20px;min-height:400px}.month-section{background:white;border-radius:10px;box-shadow:0 5px 15px rgba(0,0,0,.08);overflow:hidden;margin-bottom:0}.month-header{background:linear-gradient(135deg,#3498db,#2980b9);color:white;padding:20px;text-align:center;font-size:1.5em;font-weight:bold}.weekdays{display:grid;grid-template-columns:repeat(7,1fr);background:#34495e;color:white}.weekday{padding:15px;text-align:center;font-weight:bold;border-right:1px solid #2c3e50}.weekday:last-child{border-right:none}.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:#e9ecef}.day{background:white;min-height:120px;padding:10px;border:1px solid #e9ecef;position:relative;cursor:pointer;transition:all .3s ease}.day:hover{background:#f8f9fa;transform:scale(1.02)}.day.other-month{background:#f8f9fa;color:#adb5bd}.day.other-month:hover{background:#e9ecef}.day-number{font-weight:bold;margin-bottom:5px;color:#2c3e50;font-size:14px}.shift-item{background:#e74c3c;color:white;padding:4px 6px;margin:2px 0;border-radius:4px;font-size:11px;cursor:pointer;transition:all .3s ease;line-height:1.2}.shift-item:hover{transform:scale(1.05);box-shadow:0 2px 8px rgba(0,0,0,.2)}.shift-A{background:#2ecc71}.shift-B{background:#f39c12}.shift-C{background:#9b59b6}.shift-D{background:#e74c3c}.shift-E{background:#1abc9c}.shift-F{background:#e67e22}.shift-G{background:#34495e}.loading{text-align:center;padding:40px;font-size:1.2em;color:#7f8c8d}.error{background:#e74c3c;color:white;padding:20px;margin:20px;border-radius:8px;text-align:center}.empty-state{text-align:center;padding:60px 20px;color:#7f8c8d}.empty-state h3{margin-bottom:10px;color:#2c3e50}.day-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:2000;justify-content:center;align-items:center}.modal-content{background:white;padding:30px;border-radius:15px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 40px rgba(0,0,0,.2)}.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #f0f0f0}.modal-title{font-size:1.5em;color:#2c3e50;margin:0}.close-modal{background:#e74c3c;color:white;border:none;padding:8px 15px;border-radius:5px;cursor:pointer;font-size:16px}.close-modal:hover{background:#c0392b}.day-shifts{display:grid;gap:10px}.day-shift-item{background:#f8f9fa;padding:15px;border-radius:8px;border-left:4px solid #3498db}.day-shift-item.excluded{opacity:.6;border-left-color:#95a5a6}.shift-name{font-weight:bold;color:#2c3e50;margin-bottom:5px}.shift-time{color:#7f8c8d;font-size:14px}.mode-indicator{display:inline-block;margin-left:10px;padding:2px 8px;background:#f39c12;color:white;border-radius:10px;font-size:12px;vertical-align:middle}.debug-info{background:#f8f9fa;padding:15px;margin:10px;border-radius:5px;font-family:monospace;font-size:12px;border-left:4px solid #3498db;display:none}@media(max-width:768px){.day{min-height:100px;padding:5px}.shift-item{font-size:10px;padding:2px 4px}.filter-group{flex-direction:column}select,button,input{width:100%}.logo-title{flex-direction:column;gap:10px}.user-search{width:100%}.modal-content{width:95%;padding:20px}}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo-title">
-                <!-- 修改LOGO图片为jsDelivr CDN链接 -->
-                <img src="https://cdn.jsdelivr.net/gh/honrg/employee-schedule@main/LOGO.png" alt="VXI-Mammotion Logo" class="logo" onerror="this.style.display='none'">
-                <h1>VXI-Mammotion班表</h1>
-            </div>
-            <div class="tips">点击用户身份可重新选择 | 未选择身份时可点击日期查看当天所有班次</div>
-            <div class="user-info" id="userInfo" onclick="showUserSelector()">
-                点击选择身份
-            </div>
-            <div class="user-selector" id="userSelector" style="display: none;">
-                <div class="user-search-container">
-                    <input type="text" id="userSearch" class="user-search" placeholder="输入完整英文名(不区分大小写)..." oninput="filterUsers()">
-                    <div class="search-results" id="searchResults"></div>
-                </div>
-                <button onclick="confirmUserSelection()">确认身份</button>
-                <button class="secondary" onclick="clearUserSelection()">取消</button>
-            </div>
-        </div>
-        
-        <div class="controls">
-            <div class="filter-group">
-                <select id="yearSelect">
-                    <option value="">选择年份</option>
-                </select>
-                
-                <select id="monthSelect">
-                    <option value="">选择月份</option>
-                    <option value="01">1月</option>
-                    <option value="02">2月</option>
-                    <option value="03">3月</option>
-                    <option value="04">4月</option>
-                    <option value="05">5月</option>
-                    <option value="06">6月</option>
-                    <option value="07">7月</option>
-                    <option value="08">8月</option>
-                    <option value="09">9月</option>
-                    <option value="10">10月</option>
-                    <option value="11">11月</option>
-                    <option value="12">12月</option>
-                </select>
-                
-                <button onclick="refreshData()">刷新数据</button>
-                
-                <!-- 调试按钮（仅Sugar用户可见） -->
-                <button id="debugButton" style="display: none;" onclick="toggleDebug()">调试信息</button>
-            </div>
-        </div>
-        
-        <div class="calendar-container" id="calendarContainer">
-            <div class="loading">
-                ⏳ 正在加载班表数据...
-            </div>
-        </div>
-        
-        <!-- 日期详情模态框 -->
-        <div class="day-modal" id="dayModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title" id="modalTitle">日期详情</h2>
-                    <button class="close-modal" onclick="closeDayModal()">关闭</button>
-                </div>
-                <div class="day-shifts" id="dayShifts">
-                    <!-- 班次列表将在这里动态生成 -->
-                </div>
-            </div>
-        </div>
-        
-        <div class="debug-info" id="debugInfo">
-            <h4>📊 系统调试信息</h4>
-            <div id="debugContent"></div>
-        </div>
+<div id="app" class="container">
+  <div class="header">
+    <div class="logo-title">
+      <img :src="logoUrl" alt="VXI-Mammotion Logo" class="logo" @error="logoError">
+      <h1>VXI-Mammotion班表</h1>
     </div>
+    <div class="tips">点击用户身份可重新选择 | 未选择身份时可点击日期查看当天所有班次</div>
+    <div class="user-info" :class="{'global-mode': !currentUserName}" @click="showUserSelector">
+      {{ currentUserName ? '当前身份: ' + currentUserName : '点击选择身份 (全局模式)' }}
+    </div>
+    <div class="user-selector" v-show="showSelector">
+      <div class="user-search-container">
+        <input type="text" class="user-search" placeholder="输入完整英文名(不区分大小写)..." v-model="userSearch" @input="filterUsers">
+        <div class="search-results" v-show="filteredUsers.length > 0">
+          <div class="search-result" v-for="user in filteredUsers" :key="user" @click="selectUser(user)">{{ user }}</div>
+        </div>
+      </div>
+      <button @click="confirmUserSelection">确认身份</button>
+      <button class="secondary" @click="clearUserSelection">取消</button>
+    </div>
+  </div>
+  <div class="controls">
+    <div class="filter-group">
+      <select v-model="selectedYear" @change="renderCalendar">
+        <option value="">选择年份</option>
+        <option v-for="year in years" :value="year">{{ year }}年</option>
+      </select>
+      <select v-model="selectedMonth" @change="renderCalendar">
+        <option value="">选择月份</option>
+        <option v-for="(monthName, idx) in 12" :value="(idx+1).toString().padStart(2,'0')">{{ idx+1 }}月</option>
+      </select>
+      <button @click="refreshData">刷新数据</button>
+      <button v-if="availableUsers.includes('Sugar')" id="debugButton" @click="toggleDebug">调试信息</button>
+    </div>
+  </div>
+  <div class="calendar-container" v-html="calendarHtml"></div>
+  <div class="day-modal" v-show="showModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">{{ modalTitle }}</h2>
+        <button class="close-modal" @click="closeModal">关闭</button>
+      </div>
+      <div class="day-shifts">
+        <div v-if="dayShifts.length===0" class="empty-state">
+          <h3>当日无班次安排</h3>
+        </div>
+        <div v-for="shift in dayShifts" :key="shift.userName + shift.shiftCode" :class="['day-shift-item', {'excluded': excludedShifts.includes(shift.shiftCode)}]">
+          <div class="shift-name">{{ shift.userName }} - {{ shift.shiftCode }}班</div>
+          <div class="shift-time">{{ shift.startTime }} - {{ shift.endTime }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="debug-info" v-show="showDebug">
+    <h4>📊 系统调试信息</h4>
+    <div v-for="log in debugLogs" :key="log">{{ log }}</div>
+  </div>
+</div>
 
-   <script>
-    // 配置信息
-    const CONFIG = {
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      logoUrl: 'https://cdn.jsdelivr.net/gh/honrg/employee-schedule@main/LOGO.png',
+      allScheduleData: [],
+      availableUsers: [],
+      filteredUsers: [],
+      currentUserName: '',
+      currentUserShifts: [],
+      userSearch: '',
+      showSelector: false,
+      selectedYear: '',
+      selectedMonth: '',
+      years: [],
+      calendarHtml: '<div class="loading">⏳ 正在加载班表数据...</div>',
+      showModal: false,
+      modalTitle: '',
+      dayShifts: [],
+      showDebug: false,
+      debugLogs: [],
+      excludedShifts: ['休','离职'],
+      CONFIG: {
         DATA_URL: 'https://cdn.jsdelivr.net/gh/honrg/employee-schedule@main/schedule.csv',
-        EXCLUDED_SHIFTS: ['休', '离职'],
-        CACHE_DURATION: 1 * 60 * 1000 // 缓存有效时间，比如 1 分钟
-    };
-
-    let allScheduleData = [];
-    let currentUserName = '';
-    let currentUserShifts = [];
-    let availableUsers = [];
-    let filteredUsers = [];
-
-    function getCachedData() {
-        try {
-            const cached = localStorage.getItem('schedule_cache');
-            const lastUpdate = localStorage.getItem('schedule_last_update');
-            if (cached && lastUpdate) {
-                const age = Date.now() - parseInt(lastUpdate, 10);
-                if (age < CONFIG.CACHE_DURATION) {
-                    return JSON.parse(cached);
-                }
-            }
-        } catch (e) {
-            console.warn('缓存读取失败:', e);
-        }
-        return null;
+        CACHE_DURATION: 1*60*1000
+      }
     }
-
-    function cacheData(data) {
-        try {
-            localStorage.setItem('schedule_cache', JSON.stringify(data));
-            localStorage.setItem('schedule_last_update', Date.now().toString());
-        } catch (e) {
-            console.warn('缓存存储失败:', e);
+  },
+  mounted() {
+    this.loadScheduleData();
+  },
+  methods: {
+    logoError(e){ e.target.style.display='none'; },
+    logDebug(msg){
+      console.log(msg);
+      if(this.currentUserName==='Sugar'){
+        const timestamp = new Date().toLocaleTimeString();
+        this.debugLogs.push(`[${timestamp}] ${msg}`);
+      }
+    },
+    toggleDebug(){ if(this.currentUserName==='Sugar'){ this.showDebug=!this.showDebug; } },
+    showUserSelector(){ this.showSelector=true; this.userSearch=''; this.filteredUsers=[...this.availableUsers]; },
+    filterUsers(){ 
+      const term = this.userSearch.toLowerCase();
+      this.filteredUsers = term? this.availableUsers.filter(u=>u.toLowerCase().includes(term)): [...this.availableUsers];
+    },
+    selectUser(user){ this.userSearch=user; this.filteredUsers=[]; },
+    confirmUserSelection(){
+      const input = this.userSearch.trim();
+      const matched = this.availableUsers.find(u=>u.toLowerCase()===input.toLowerCase());
+      if(!matched){ alert('未找到该员工，请检查姓名'); return;}
+      this.currentUserName = matched;
+      this.showSelector=false;
+      this.filterUserShifts();
+      this.renderCalendar();
+    },
+    clearUserSelection(){ this.currentUserName=''; this.showSelector=false; this.currentUserShifts=[]; this.renderCalendar(); },
+    getCachedData(){ try{ const cached=localStorage.getItem('schedule_cache'); const last=localStorage.getItem('schedule_last_update'); if(cached&&last){ const age=Date.now()-parseInt(last); if(age<this.CONFIG.CACHE_DURATION){ this.logDebug('使用缓存数据:'+Math.round(age/1000)+'秒'); return JSON.parse(cached); } } }catch(e){ console.warn(e);} return null; },
+    cacheData(data){ try{ localStorage.setItem('schedule_cache',JSON.stringify(data)); localStorage.setItem('schedule_last_update',Date.now().toString()); this.logDebug('数据已缓存'); }catch(e){console.warn(e);} },
+    async loadScheduleData(){
+      let cached=this.getCachedData();
+      if(cached){ this.allScheduleData=cached; this.initializeAfterDataLoad(); return; }
+      try{
+        this.calendarHtml='<div class="loading">⏳ 正在加载班表数据...</div>';
+        const res=await fetch(this.CONFIG.DATA_URL+'?t='+Date.now());
+        const text=await res.text();
+        this.allScheduleData=this.parseCSV(text);
+        if(this.allScheduleData.length===0) throw new Error('CSV无有效数据');
+        this.cacheData(this.allScheduleData);
+        this.initializeAfterDataLoad();
+      }catch(e){
+        console.error(e);
+        let cached=this.getCachedData();
+        if(cached){ this.allScheduleData=cached; this.initializeAfterDataLoad(); }
+        else{ this.calendarHtml='<div class="error">数据加载失败: '+e.message+'</div>'; }
+      }
+    },
+    initializeAfterDataLoad(){
+      this.availableUsers=[...new Set(this.allScheduleData.map(s=>s.userName))].sort();
+      this.filteredUsers=[...this.availableUsers];
+      this.populateYearMonthFilter();
+    },
+    parseCSV(text){
+      const lines=text.split('\n');
+      if(lines.length===0) return [];
+      const headers=lines[0].split(',').map(h=>h.trim());
+      const result=[];
+      for(let i=1;i<lines.length;i++){
+        const vals=lines[i].split(',').map(v=>v.trim());
+        if(vals.length>=3){
+          result.push({
+            userName: vals[0]||'未知用户',
+            shiftCode: vals[1]||'A',
+            shiftDate:this.formatDate(vals[2]),
+            startTime:this.formatTime(vals[3]||'09:00'),
+            endTime:this.formatTime(vals[4]||'18:00')
+          });
         }
-    }
-
-    async function loadScheduleData() {
-        try {
-            const cachedData = getCachedData();
-            if (cachedData) {
-                allScheduleData = cachedData;
-                initializeAfterDataLoad();
-                return;
-            }
-
-            showLoading('正在加载班表数据...');
-
-            // 在 URL 后加时间戳，避免 CDN/浏览器缓存
-            const fetchUrl = CONFIG.DATA_URL + '?t=' + Date.now();
-            const response = await fetch(fetchUrl);
-            const csvText = await response.text();
-
-            allScheduleData = parseCSV(csvText);
-            if (allScheduleData.length === 0) {
-                throw new Error('CSV 文件中没有有效数据');
-            }
-
-            cacheData(allScheduleData);
-            initializeAfterDataLoad();
-        } catch (error) {
-            console.error('加载失败:', error);
-            const cachedData = getCachedData();
-            if (cachedData) {
-                allScheduleData = cachedData;
-                initializeAfterDataLoad();
-            } else {
-                showError('数据加载失败: ' + error.message);
-            }
+      }
+      return result;
+    },
+    formatDate(dateValue){
+      if(!dateValue) return '';
+      if(typeof dateValue==='object') return dateValue.toISOString().split('T')[0];
+      let dateStr=String(dateValue).trim();
+      if(/^\d+$/.test(dateStr)){ const d=new Date((parseInt(dateStr)-25569)*86400*1000); return d.toISOString().split('T')[0];}
+      if(dateStr.includes('/')){ const p=dateStr.split('/'); if(p.length===3){ let [y,m,d]=p; if(m.length===1)m='0'+m;if(d.length===1)d='0'+d; if(y.length===2)y='20'+y; return `${y}-${m}-${d}`; } }
+      if(dateStr.includes('-')){ const p=dateStr.split('-'); if(p.length===3){ let [y,m,d]=p; if(m.length===1)m='0'+m;if(d.length===1)d='0'+d; return `${y}-${m}-${d}`;} return dateStr.split(' ')[0]; }
+      return dateStr;
+    },
+    formatTime(value){
+      if(!value) return '09:00';
+      if(/^\d+\.\d+$/.test(value)){ const total=Math.round(parseFloat(value)*24*3600); const h=Math.floor(total/3600); const m=Math.floor((total%3600)/60); return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; }
+      return value;
+    },
+    populateYearMonthFilter(){
+      const yearsSet=new Set(this.allScheduleData.map(d=>parseInt(d.shiftDate.split('-')[0])));
+      this.years=[...yearsSet].sort();
+      this.selectedYear=''; this.selectedMonth='';
+      this.renderCalendar();
+    },
+    filterUserShifts(){
+      if(this.currentUserName){ this.currentUserShifts=this.allScheduleData.filter(d=>d.userName===this.currentUserName); } 
+      else { this.currentUserShifts=[]; }
+    },
+    renderCalendar(){
+      const year=this.selectedYear||new Date().getFullYear();
+      const month=this.selectedMonth||'';
+      let calendarHtml='';
+      for(let m=1;m<=12;m++){
+        if(month&&parseInt(month)!==m) continue;
+        const monthData=this.allScheduleData.filter(d=>parseInt(d.shiftDate.split('-')[0])===parseInt(year)&&parseInt(d.shiftDate.split('-')[1])===m);
+        const firstDay=new Date(year,m-1,1); const lastDay=new Date(year,m,0);
+        const weekdayFirst=firstDay.getDay();
+        const totalDays=lastDay.getDate();
+        calendarHtml+=`<div class="month-section"><div class="month-header">${m}月 ${year}</div>`;
+        calendarHtml+='<div class="weekdays">'+['日','一','二','三','四','五','六'].map(w=>`<div class="weekday">${w}</div>`).join('')+'</div>';
+        calendarHtml+='<div class="days-grid">';
+        for(let i=0;i<weekdayFirst;i++){ calendarHtml+='<div class="day other-month"></div>'; }
+        for(let d=1;d<=totalDays;d++){
+          const dateStr=`${year}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const dayShifts=this.currentUserName? this.currentUserShifts.filter(s=>s.shiftDate===dateStr): this.allScheduleData.filter(s=>s.shiftDate===dateStr);
+          let shiftsHtml=dayShifts.map(s=>`<div class="shift-item shift-${s.shiftCode}" onclick="app.openDayModal('${dateStr}')">${s.shiftCode}</div>`).join('');
+          calendarHtml+=`<div class="day" onclick="app.openDayModal('${dateStr}')"><div class="day-number">${d}</div>${shiftsHtml}</div>`;
         }
-    }
+        calendarHtml+='</div></div>';
+      }
+      this.calendarHtml=calendarHtml;
+    },
+    openDayModal(dateStr){
+      const dayShifts=this.currentUserName? this.currentUserShifts.filter(s=>s.shiftDate===dateStr): this.allScheduleData.filter(s=>s.shiftDate===dateStr);
+      this.modalTitle=`${dateStr} 班次详情`;
+      this.dayShifts=dayShifts;
+      this.showModal=true;
+    },
+    closeModal(){ this.showModal=false; },
+    refreshData(){ localStorage.removeItem('schedule_cache'); localStorage.removeItem('schedule_last_update'); this.loadScheduleData(); }
+  }
+}).mount('#app');
 
-    function parseCSV(csvText) {
-        const lines = csvText.split('\n');
-        const result = [];
-        if (lines.length === 0) return result;
-
-        const headers = lines[0].split(',').map(h => h.trim());
-        for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-            const values = line.split(',').map(v => v.trim());
-            if (values.length >= 3) {
-                result.push({
-                    userName: values[0] || '未知用户',
-                    shiftCode: values[1] || '',
-                    shiftDate: formatDate(values[2]),
-                    startTime: formatTime(values[3] || ''),
-                    endTime: formatTime(values[4] || '')
-                });
-            }
-        }
-        return result;
-    }
-
-    function formatDate(dateValue) {
-        if (!dateValue) return '';
-        const dateStr = String(dateValue).trim();
-        if (dateStr.includes('/')) {
-            const parts = dateStr.split('/');
-            if (parts.length === 3) {
-                let [year, month, day] = parts;
-                if (month.length === 1) month = '0' + month;
-                if (day.length === 1) day = '0' + day;
-                if (year.length === 2) year = '20' + year;
-                return `${year}-${month}-${day}`;
-            }
-        }
-        if (dateStr.includes('-')) {
-            const parts = dateStr.split('-');
-            if (parts.length === 3) {
-                let [year, month, day] = parts;
-                if (month.length === 1) month = '0' + month;
-                if (day.length === 1) day = '0' + day;
-                return `${year}-${month}-${day}`;
-            }
-            return dateStr.split(' ')[0];
-        }
-        return dateStr;
-    }
-
-    function formatTime(timeValue) {
-        if (!timeValue) return '';
-        const timeStr = String(timeValue).trim();
-        if (timeStr.includes(':')) {
-            const parts = timeStr.split(':');
-            if (parts.length >= 2) {
-                const hh = parts[0].padStart(2, '0');
-                const mm = parts[1].padStart(2, '0');
-                return `${hh}:${mm}`;
-            }
-            return timeStr;
-        }
-        return timeStr;
-    }
-
-    function getAllUsers() {
-        const userSet = new Set();
-        allScheduleData.forEach(item => {
-            userSet.add(item.userName);
-        });
-        return Array.from(userSet).sort();
-    }
-
-    function filterUserShifts() {
-        if (!currentUserName) {
-            currentUserShifts = [];
-        } else {
-            currentUserShifts = allScheduleData.filter(s => s.userName === currentUserName);
-        }
-    }
-
-    function populateYearMonthFilter() {
-        const yearSelect = document.getElementById('yearSelect');
-        const monthSelect = document.getElementById('monthSelect');
-        yearSelect.innerHTML = '<option value="">选择年份</option>';
-        monthSelect.innerHTML = '<option value="">选择月份</option>';
-        for (let i = 1; i <= 12; i++) {
-            const opt = document.createElement('option');
-            opt.value = i.toString().padStart(2, '0');
-            opt.textContent = `${i}月`;
-            monthSelect.appendChild(opt);
-        }
-        const years = new Set();
-        allScheduleData.forEach(s => {
-            if (s.shiftDate) {
-                const y = s.shiftDate.split('-')[0];
-                years.add(y);
-            }
-        });
-        const yearsArr = Array.from(years).sort((a, b) => b - a);
-        yearsArr.forEach(y => {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = `${y}年`;
-            yearSelect.appendChild(opt);
-        });
-
-        const now = new Date();
-        const cy = now.getFullYear().toString();
-        const cm = (now.getMonth() + 1).toString().padStart(2, '0');
-        if (yearsArr.includes(cy)) {
-            yearSelect.value = cy;
-        } else if (yearsArr.length > 0) {
-            yearSelect.value = yearsArr[0];
-        }
-        monthSelect.value = cm;
-    }
-
-    function renderCalendar() {
-        const container = document.getElementById('calendarContainer');
-        const selectedYear = document.getElementById('yearSelect').value;
-        const selectedMonth = document.getElementById('monthSelect').value;
-        updateUserInfo();
-        if (!selectedYear || !selectedMonth) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>请选择年份和月份</h3>
-                    <p>在上方选择要查看的年份和月份</p>
-                </div>
-            `;
-            return;
-        }
-        container.innerHTML = generateMonthCalendar(selectedYear, parseInt(selectedMonth, 10));
-    }
-
-    function generateMonthCalendar(year, month) {
-        const firstDay = new Date(year, month - 1, 1);
-        const lastDay = new Date(year, month, 0);
-        const daysInMonth = lastDay.getDate();
-        const startingDay = firstDay.getDay();
-        const monthNames = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
-        let title = `${year}年 ${monthNames[month - 1]}`;
-        if (currentUserName) {
-            title += ` - ${currentUserName}的班表`;
-        } else {
-            title += ' - 全局模式 (点击日期查看班次)';
-        }
-
-        let html = `<div class="month-section">
-            <div class="month-header">${title}</div>
-            <div class="weekdays">
-                <div class="weekday">周日</div><div class="weekday">周一</div><div class="weekday">周二</div>
-                <div class="weekday">周三</div><div class="weekday">周四</div><div class="weekday">周五</div>
-                <div class="weekday">周六</div>
-            </div>
-            <div class="days-grid">`;
-
-        for (let i = 0; i < startingDay; i++) {
-            html += `<div class="day other-month"></div>`;
-        }
-
-        const monthStr = month.toString().padStart(2, '0');
-
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dayStr = d.toString().padStart(2, '0');
-            const dateStr = `${year}-${monthStr}-${dayStr}`;
-            html += `<div class="day" onclick="handleDayClick('${dateStr}')">
-                        <div class="day-number">${d}</div>`;
-            if (currentUserName) {
-                const shifts = currentUserShifts.filter(s => s.shiftDate === dateStr);
-                shifts.forEach(s => {
-                    html += `<div class="shift-item shift-${s.shiftCode}"
-                                title="${s.shiftCode}班 ${s.startTime}-${s.endTime}"
-                                onclick="event.stopPropagation(); showShiftDetails('${s.shiftCode}','${s.startTime}','${s.endTime}')">
-                                ${s.shiftCode}班<br>${s.startTime}-${s.endTime}
-                             </div>`;
-                });
-            }
-            html += `</div>`;
-        }
-
-        const totalCells = 42;
-        const used = startingDay + daysInMonth;
-        for (let i = used; i < totalCells; i++) {
-            html += `<div class="day other-month"></div>`;
-        }
-
-        html += `</div></div>`;
-        return html;
-    }
-
-    function handleDayClick(dateStr) {
-        if (currentUserName) return;
-        showDayShifts(dateStr);
-    }
-
-    function showDayShifts(dateStr) {
-        const dayShifts = allScheduleData.filter(s => s.shiftDate === dateStr && !CONFIG.EXCLUDED_SHIFTS.includes(s.shiftCode));
-        const modalTitle = document.getElementById('modalTitle');
-        const container = document.getElementById('dayShifts');
-        const dateObj = new Date(dateStr);
-        modalTitle.textContent = `${dateObj.getFullYear()}年${dateObj.getMonth()+1}月${dateObj.getDate()}日 班次安排`;
-        container.innerHTML = '';
-        if (dayShifts.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>当日无班次安排</h3>
-                    <p>${modalTitle.textContent}</p>
-                </div>
-            `;
-        } else {
-            dayShifts.forEach(s => {
-                const item = document.createElement('div');
-                item.className = 'day-shift-item';
-                item.innerHTML = `<div class="shift-name">${s.userName} - ${s.shiftCode}班</div>
-                                  <div class="shift-time">${s.startTime} - ${s.endTime}</div>`;
-                container.appendChild(item);
-            });
-        }
-        document.getElementById('dayModal').style.display = 'flex';
-    }
-
-    function closeDayModal() {
-        document.getElementById('dayModal').style.display = 'none';
-    }
-
-    function updateUserInfo() {
-        const userInfo = document.getElementById('userInfo');
-        if (currentUserName) {
-            userInfo.textContent = `当前身份: ${currentUserName}`;
-            userInfo.className = 'user-info';
-        } else {
-            userInfo.textContent = '点击选择身份 (全局模式)';
-            userInfo.className = 'user-info global-mode';
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('yearSelect').addEventListener('change', renderCalendar);
-        document.getElementById('monthSelect').addEventListener('change', renderCalendar);
-        document.addEventListener('click', e => {
-            if (!e.target.closest('.user-search-container')) {
-                const sr = document.getElementById('searchResults');
-                if (sr) sr.style.display = 'none';
-            }
-        });
-        loadScheduleData();
-    });
-
-    // 显示 loading / error 的简单函数
-    function showLoading(msg) {
-        document.getElementById('calendarContainer').innerHTML = `<div class="loading">${msg}</div>`;
-    }
-    function showError(msg) {
-        document.getElementById('calendarContainer').innerHTML = `<div class="error">${msg}</div>`;
-    }
+window.app = createApp; // 保证 onclick 调用可用
 </script>
 </body>
 </html>
-
